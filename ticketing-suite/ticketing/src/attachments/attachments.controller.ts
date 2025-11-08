@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AttachmentsService } from './attachments.service';
 import { JwtAuthGuard } from '../common/auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -24,5 +24,10 @@ export class AttachmentsController {
   @Roles('ADMIN', 'USER')
   async finalize(@Req() req: any, @Param('attachmentId') attachmentId: string, @Body() dto: { size: number; checksumSha256: string }) {
     return this.svc.finalize(this.tenant(req), attachmentId, dto.size, dto.checksumSha256);
+  }
+  @Delete(':id')
+  @Roles('ADMIN', 'USER')
+  async delete(@Req() req: any, @Param('ticketId') ticketId: string, @Param('id') id: string) {
+    return this.svc.delete(this.tenant(req), ticketId, id);
   }
 }

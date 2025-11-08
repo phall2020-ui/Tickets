@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../infra/prisma.service';
 import { S3 } from 'aws-sdk';
 import { randomUUID } from 'crypto';
@@ -45,5 +45,14 @@ import { randomUUID } from 'crypto';
   }
   async finalize(tenantId: string, attachmentId: string, size: number, checksumSha256: string) {
     return this.prisma.withTenant(tenantId, async (tx) => tx.attachment.update({ where: { id: attachmentId }, data: { sizeBytes: size, checksumSha256 } }));
+  }
+  async delete(tenantId: string, ticketId: string, id: string) {
+    return this.prisma.withTenant(tenantId, async (tx) => {
+      const attachment = await tx.attachment.findFirst({ where: { id, tenantId, ticketId }});
+      if (!attachment) throw new NotFoundException('Attachment not found');
+      await this.s3.deleteObject({ Bucket: this.bucket(), Key: attachment.objectKey }).promise();
+      await tx.attachment.delete({ where: { id }});
+      return { success: true };
+    });
   }
 }
