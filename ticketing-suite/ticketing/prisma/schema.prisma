@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String      @id @default(uuid())
+  name      String
+  sites     Site[]
+  fields    TicketFieldDef[]
+  users     User[]
+  tickets   Ticket[]
+  comments  Comment[]
+  attachments Attachment[]
+  outboxEntries Outbox[]
+}
+
+model Site {
+  id       String @id @default(uuid())
+  tenantId String
+  name     String
+  location String?
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tickets  Ticket[]
+
+  @@index([tenantId, name])
+}
+
+model User {
+  id       String @id @default(uuid())
+  tenantId String
+  email    String
+  name     String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+}
+
+model Ticket {
+  id              String   @id @default(uuid())
+  tenantId        String
+  siteId          String
+  typeKey         String
+  description     String
+  status          TicketStatus
+  priority        TicketPriority
+  details         String?
+  assignedUserId  String?     // <— NEW
+  customFields    Json      @default("{}")
+  dueAt           DateTime?
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  site            Site      @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  comments        Comment[]
+  attachments     Attachment[]
+  outboxEntries   Outbox[]
+
+  @@index([tenantId, status, priority, createdAt])
+  @@index([tenantId, siteId, createdAt])
+  @@index([tenantId, typeKey, createdAt])
+  @@index([tenantId, assignedUserId])
+}
+
+model TicketFieldDef {
+  id         String        @id @default(uuid())
+  tenantId   String
+  key        String
+  label      String
+  datatype   FieldDatatype
+  required   Boolean       @default(false)
+  enumOptions String[]
+  validation Json?
+  uiHints    Json?
+  isIndexed  Boolean       @default(false)
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+}
+
+enum TicketStatus {
+  NEW
+  TRIAGE
+  IN_PROGRESS
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  P1
+  P2
+  P3
+  P4
+}
+
+enum FieldDatatype {
+  string
+  number
+  boolean
+  date
+  enum
+}
+
+model Comment {
+  id          String            @id @default(uuid())
+  tenantId    String
+  ticketId    String
+  authorUserId String?
+  visibility  CommentVisibility
+  body        String
+  createdAt   DateTime          @default(now())
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ticket      Ticket            @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, ticketId, createdAt])
+}
+
+enum CommentVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+model Attachment {
+  id            String   @id @default(uuid())
+  tenantId      String
+  ticketId      String
+  commentId     String?
+  objectKey     String
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  checksumSha256 String
+  createdAt     DateTime @default(now())
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  comment       Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, ticketId])
+}
+
+model Outbox {
+  id          String   @id @default(uuid())
+  tenantId    String
+  type        String
+  entityId    String
+  payload     Json
+  occurredAt  DateTime @default(now())
+  publishedAt DateTime?
+  retryCount  Int      @default(0)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, type, occurredAt])
+}

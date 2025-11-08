@@ -1,0 +1,23 @@
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../infra/prisma.service';
+import { S3 } from 'aws-sdk';
+import { randomUUID } from 'crypto';
+@Injectable() export class AttachmentsService {
+  private s3 = new S3({ region: process.env.AWS_REGION });
+  constructor(private prisma: PrismaService) {}
+  private bucket() { const b = process.env.S3_BUCKET; if (!b) throw new Error('S3_BUCKET not configured'); return b; }
+  async createPresigned(tenantId: string, ticketId: string, filename: string, mime: string) {
+    return this.prisma.withTenant(tenantId, async (tx) => {
+      const t = await tx.ticket.findFirst({ where: { id: ticketId, tenantId }});
+      if (!t) throw new BadRequestException('Invalid ticket');
+      const id = randomUUID();
+      const key = `tickets/${tenantId}/${ticketId}/${id}-${filename}`;
+      const upload_url = this.s3.getSignedUrl('putObject', { Bucket: this.bucket(), Key: key, ContentType: mime, Expires: 600 });
+      await tx.attachment.create({ data: { id, tenantId, ticketId, objectKey: key, filename, mimeType: mime, sizeBytes: 0, checksumSha256: '' } });
+      return { upload_url, object_key: key, attachment_id: id };
+    });
+  }
+  async finalize(tenantId: string, attachmentId: string, size: number, checksumSha256: string) {
+    return this.prisma.withTenant(tenantId, async (tx) => tx.attachment.update({ where: { id: attachmentId }, data: { sizeBytes: size, checksumSha256 } }));
+  }
+}
