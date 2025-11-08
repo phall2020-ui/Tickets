@@ -93,7 +93,7 @@ describe('Ticketing System E2E Tests', () => {
     const payload = {
       sub: testUserId,
       tenantId: testTenantId,
-      roles: ['ADMIN', 'USER'],
+      role: 'ADMIN',
       email: 'test@example.com',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 86400,
@@ -371,10 +371,10 @@ describe('Ticketing System E2E Tests', () => {
         })
         .expect(201)
         .expect((res) => {
-          expect(res.body).toHaveProperty('id');
-          expect(res.body).toHaveProperty('uploadUrl');
-          expect(res.body).toHaveProperty('key');
-          testAttachmentId = res.body.id;
+          expect(res.body).toHaveProperty('attachment_id');
+          expect(res.body).toHaveProperty('upload_url');
+          expect(res.body).toHaveProperty('object_key');
+          testAttachmentId = res.body.attachment_id;
         });
     });
 
@@ -389,7 +389,8 @@ describe('Ticketing System E2E Tests', () => {
         .expect(201)
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
-          expect(res.body.state).toBe('UPLOADED');
+          expect(res.body.sizeBytes).toBe(1024);
+          expect(res.body.checksumSha256).toBe('abc123');
         });
     });
 
@@ -415,6 +416,323 @@ describe('Ticketing System E2E Tests', () => {
     });
   });
 
+  describe('User Management', () => {
+    let testUser2Id: string;
+
+    beforeAll(async () => {
+      // Create a second test user for management tests
+      testUser2Id = 'test-user-2-' + Date.now();
+      await prisma.user.create({
+        data: {
+          id: testUser2Id,
+          tenantId: testTenantId,
+          email: `test-2-${Date.now()}@example.com`,
+          password: 'hashed-password',
+          name: 'Test User 2',
+          role: 'USER',
+        },
+      });
+    });
+
+    it('PATCH /users/:id - should update user', async () => {
+      const response = await request(app.getHttpServer())
+        .patch(`/users/${testUser2Id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Updated Test User',
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.name).toBe('Updated Test User');
+    });
+
+    it('PATCH /users/me - should update own profile', async () => {
+      const response = await request(app.getHttpServer())
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Self Updated User',
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.name).toBe('Self Updated User');
+    });
+
+    it('POST /users/me/change-password - should change own password', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/users/me/change-password')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          oldPassword: 'hashed-password',
+          newPassword: 'new-password',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('success');
+    });
+
+    it('POST /users/:id/reset-password - should reset user password', async () => {
+      const response = await request(app.getHttpServer())
+        .post(`/users/${testUser2Id}/reset-password`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          password: 'reset-password',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('success');
+      expect(response.body.success).toBe(true);
+    });
+
+    it('DELETE /users/:id - should delete user', async () => {
+      const response = await request(app.getHttpServer())
+        .delete(`/users/${testUser2Id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success');
+      expect(response.body.success).toBe(true);
+    });
+
+    it('PATCH /users/:id - should fail without auth', () => {
+      return request(app.getHttpServer())
+        .patch(`/users/${testUserId}`)
+        .send({
+          name: 'Updated User',
+        })
+        .expect(401);
+    });
+  });
+
+  describe('Issue Type Management', () => {
+    let testIssueTypeId: string;
+
+    it('POST /directory/issue-types - should create issue type', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/directory/issue-types')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          key: 'E2E_TEST_TYPE',
+          label: 'E2E Test Issue Type',
+        })
+        .expect(201);
+
+      testIssueTypeId = response.body.id;
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.key).toBe('E2E_TEST_TYPE');
+      expect(response.body.label).toBe('E2E Test Issue Type');
+    });
+
+    it('PATCH /directory/issue-types/:id - should update issue type', async () => {
+      const response = await request(app.getHttpServer())
+        .patch(`/directory/issue-types/${testIssueTypeId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          label: 'Updated Issue Type',
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.label).toBe('Updated Issue Type');
+    });
+
+    it('DELETE /directory/issue-types/:id - should deactivate issue type', async () => {
+      const response = await request(app.getHttpServer())
+        .delete(`/directory/issue-types/${testIssueTypeId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('active');
+      expect(response.body.active).toBe(false);
+    });
+
+    it('POST /directory/issue-types - should fail without auth', () => {
+      return request(app.getHttpServer())
+        .post('/directory/issue-types')
+        .send({
+          key: 'TEST_TYPE',
+          label: 'Test Type',
+        })
+        .expect(401);
+    });
+  });
+
+  describe('Field Definition Management', () => {
+    let testFieldDefId: string;
+
+    it('POST /directory/field-definitions - should create field definition', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/directory/field-definitions')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          key: 'e2e_test_field',
+          label: 'E2E Test Field',
+          datatype: 'string',
+          required: false,
+        })
+        .expect(201);
+
+      testFieldDefId = response.body.id;
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.key).toBe('e2e_test_field');
+      expect(response.body.label).toBe('E2E Test Field');
+      expect(response.body.datatype).toBe('string');
+    });
+
+    it('PATCH /directory/field-definitions/:id - should update field definition', async () => {
+      const response = await request(app.getHttpServer())
+        .patch(`/directory/field-definitions/${testFieldDefId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          label: 'Updated Field',
+          required: true,
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.label).toBe('Updated Field');
+      expect(response.body.required).toBe(true);
+    });
+
+    it('GET /directory/field-definitions - should include id field', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/directory/field-definitions')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body[0]).toHaveProperty('id');
+    });
+
+    it('DELETE /directory/field-definitions/:id - should delete field definition', async () => {
+      await request(app.getHttpServer())
+        .delete(`/directory/field-definitions/${testFieldDefId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+    });
+
+    it('POST /directory/field-definitions - should fail without auth', () => {
+      return request(app.getHttpServer())
+        .post('/directory/field-definitions')
+        .send({
+          key: 'test_field',
+          label: 'Test Field',
+          datatype: 'string',
+        })
+        .expect(401);
+    });
+  });
+
+  describe('Comment Management - Edit and Delete', () => {
+    let editableCommentId: string;
+
+    beforeAll(async () => {
+      // Create a comment for editing tests
+      const response = await request(app.getHttpServer())
+        .post(`/tickets/${testTicketId}/comments`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          body: 'Original comment for editing',
+          visibility: 'INTERNAL',
+        })
+        .expect(201);
+
+      editableCommentId = response.body.id;
+    });
+
+    it('PATCH /tickets/:ticketId/comments/:id - should update comment', async () => {
+      const response = await request(app.getHttpServer())
+        .patch(`/tickets/${testTicketId}/comments/${editableCommentId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          body: 'Updated test comment',
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.body).toBe('Updated test comment');
+    });
+
+    it('DELETE /tickets/:ticketId/comments/:id - should delete comment', async () => {
+      const response = await request(app.getHttpServer())
+        .delete(`/tickets/${testTicketId}/comments/${editableCommentId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success');
+      expect(response.body.success).toBe(true);
+    });
+
+    it('PATCH /tickets/:ticketId/comments/:id - should fail without auth', () => {
+      return request(app.getHttpServer())
+        .patch(`/tickets/${testTicketId}/comments/${testCommentId}`)
+        .send({
+          body: 'Updated comment',
+        })
+        .expect(401);
+    });
+  });
+
+  describe('Attachment Management - List and Delete', () => {
+    let deletableAttachmentId: string;
+
+    beforeAll(async () => {
+      // Create an attachment for deletion tests
+      const presignResponse = await request(app.getHttpServer())
+        .post(`/tickets/${testTicketId}/attachments/presign`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          filename: 'delete-test.pdf',
+          mime: 'application/pdf',
+        })
+        .expect(201);
+
+      deletableAttachmentId = presignResponse.body.attachment_id;
+
+      // Finalize the attachment
+      await request(app.getHttpServer())
+        .post(`/tickets/${testTicketId}/attachments/${deletableAttachmentId}/finalize`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          size: 2048,
+          checksumSha256: 'xyz789',
+        })
+        .expect(201);
+    });
+
+    it('GET /tickets/:ticketId/attachments - should list attachments', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/tickets/${testTicketId}/attachments`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body[0]).toHaveProperty('id');
+      expect(response.body[0]).toHaveProperty('filename');
+      expect(response.body[0]).toHaveProperty('downloadUrl');
+    });
+
+    it('DELETE /tickets/:ticketId/attachments/:id - should delete attachment', async () => {
+      const response = await request(app.getHttpServer())
+        .delete(`/tickets/${testTicketId}/attachments/${deletableAttachmentId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success');
+      expect(response.body.success).toBe(true);
+    });
+
+    it('GET /tickets/:ticketId/attachments - should fail without auth', () => {
+      return request(app.getHttpServer())
+        .get(`/tickets/${testTicketId}/attachments`)
+        .expect(401);
+    });
+  });
+
   describe('Multi-tenancy Isolation', () => {
     let otherTenantToken: string;
     let otherTenantId: string;
@@ -432,7 +750,7 @@ describe('Ticketing System E2E Tests', () => {
       const payload = {
         sub: 'other-user',
         tenantId: otherTenantId,
-        roles: ['USER'],
+        role: 'USER',
         email: 'other@example.com',
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 86400,
@@ -596,8 +914,8 @@ describe('Ticketing System E2E Tests', () => {
         })
         .expect(201);
 
-      const attachmentId = presignResponse.body.id;
-      expect(presignResponse.body).toHaveProperty('uploadUrl');
+      const attachmentId = presignResponse.body.attachment_id;
+      expect(presignResponse.body).toHaveProperty('upload_url');
 
       // Step 6: Finalize attachment
       await request(app.getHttpServer())
