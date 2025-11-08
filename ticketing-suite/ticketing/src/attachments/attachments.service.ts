@@ -16,7 +16,7 @@ import { randomUUID } from 'crypto';
         orderBy: { createdAt: 'desc' }
       });
       // Generate presigned download URLs for each attachment
-      return attachments.map(att => ({
+      return attachments.map((att: any) => ({
         id: att.id,
         ticketId: att.ticketId,
         filename: att.filename,
