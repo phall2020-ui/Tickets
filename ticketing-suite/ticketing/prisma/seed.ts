@@ -18,58 +18,71 @@ async function main() {
   console.log('Created tenant:', tenant.id);
 
   // Create sites
-  const site1 = await prisma.site.upsert({
-    where: { id: 'site-1' },
-    update: {},
-    create: {
-      id: 'site-1',
-      tenantId: tenant.id,
-      name: 'Main Office',
-      location: 'New York, NY',
-    },
-  });
+  const sites = [
+    { id: 'site-1', name: 'Main Office', location: 'New York, NY' },
+    { id: 'site-2', name: 'West Coast Branch', location: 'San Francisco, CA' },
+    { id: 'site-3', name: 'Chicago Facility', location: 'Chicago, IL' },
+    { id: 'site-4', name: 'Dallas Warehouse', location: 'Dallas, TX' },
+    { id: 'site-5', name: 'Boston Office', location: 'Boston, MA' },
+    { id: 'site-6', name: 'Seattle Branch', location: 'Seattle, WA' },
+    { id: 'site-7', name: 'Miami Location', location: 'Miami, FL' },
+    { id: 'site-8', name: 'Denver Site', location: 'Denver, CO' },
+  ];
 
-  const site2 = await prisma.site.upsert({
-    where: { id: 'site-2' },
-    update: {},
-    create: {
-      id: 'site-2',
-      tenantId: tenant.id,
-      name: 'West Coast Branch',
-      location: 'San Francisco, CA',
-    },
-  });
-  console.log('Created sites:', site1.name, site2.name);
+  const createdSites = [];
+  for (const siteData of sites) {
+    const site = await prisma.site.upsert({
+      where: { id: siteData.id },
+      update: {},
+      create: {
+        id: siteData.id,
+        tenantId: tenant.id,
+        name: siteData.name,
+        location: siteData.location,
+      },
+    });
+    createdSites.push(site);
+  }
+  console.log('Created sites:', createdSites.map(s => s.name).join(', '));
+  
+  const site1 = createdSites[0];
+  const site2 = createdSites[1];
 
   // Create users
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
-    create: {
-      id: 'admin-1',
-      tenantId: tenant.id,
-      email: 'admin@example.com',
-      password: adminPassword,
-      name: 'Admin User',
-      role: 'ADMIN',
-    },
-  });
+  const users = [
+    { id: 'admin-1', email: 'admin@example.com', password: 'admin123', name: 'Admin User', role: 'ADMIN' as const },
+    { id: 'user-1', email: 'user@example.com', password: 'user123', name: 'Regular User', role: 'USER' as const },
+    { id: 'user-2', email: 'john.doe@example.com', password: 'password123', name: 'John Doe', role: 'USER' as const },
+    { id: 'user-3', email: 'jane.smith@example.com', password: 'password123', name: 'Jane Smith', role: 'USER' as const },
+    { id: 'user-4', email: 'bob.jones@example.com', password: 'password123', name: 'Bob Jones', role: 'USER' as const },
+    { id: 'user-5', email: 'alice.brown@example.com', password: 'password123', name: 'Alice Brown', role: 'USER' as const },
+    { id: 'user-6', email: 'charlie.wilson@example.com', password: 'password123', name: 'Charlie Wilson', role: 'USER' as const },
+    { id: 'user-7', email: 'diana.miller@example.com', password: 'password123', name: 'Diana Miller', role: 'USER' as const },
+    { id: 'user-8', email: 'edward.davis@example.com', password: 'password123', name: 'Edward Davis', role: 'USER' as const },
+    { id: 'admin-2', email: 'manager@example.com', password: 'manager123', name: 'Manager User', role: 'ADMIN' as const },
+  ];
 
-  const userPassword = await bcrypt.hash('user123', 10);
-  const user = await prisma.user.upsert({
-    where: { email: 'user@example.com' },
-    update: {},
-    create: {
-      id: 'user-1',
-      tenantId: tenant.id,
-      email: 'user@example.com',
-      password: userPassword,
-      name: 'Regular User',
-      role: 'USER',
-    },
-  });
-  console.log('Created users:', admin.email, user.email);
+  const createdUsers = [];
+  for (const userData of users) {
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const user = await prisma.user.upsert({
+      where: { email: userData.email },
+      update: {},
+      create: {
+        id: userData.id,
+        tenantId: tenant.id,
+        email: userData.email,
+        password: hashedPassword,
+        name: userData.name,
+        role: userData.role,
+      },
+    });
+    createdUsers.push(user);
+  }
+  console.log('Created users:', createdUsers.map(u => u.email).join(', '));
+  
+  const admin = createdUsers.find(u => u.role === 'ADMIN')!;
+  const user = createdUsers.find(u => u.role === 'USER')!;
 
   // Create issue types
   const issueTypes = [
@@ -134,9 +147,21 @@ async function main() {
   console.log('Created tickets:', ticket1.id, ticket2.id);
 
   console.log('Seeding complete!');
-  console.log('\nTest credentials:');
-  console.log('Admin - email: admin@example.com, password: admin123');
-  console.log('User - email: user@example.com, password: user123');
+  console.log('\n=== Test Credentials ===');
+  console.log('\nAdmin Users:');
+  createdUsers.filter(u => u.role === 'ADMIN').forEach(u => {
+    const userData = users.find(ud => ud.email === u.email)!;
+    console.log(`  ${u.name} - email: ${u.email}, password: ${userData.password}`);
+  });
+  console.log('\nRegular Users:');
+  createdUsers.filter(u => u.role === 'USER').forEach(u => {
+    const userData = users.find(ud => ud.email === u.email)!;
+    console.log(`  ${u.name} - email: ${u.email}, password: ${userData.password}`);
+  });
+  console.log('\n=== Sites ===');
+  createdSites.forEach(s => {
+    console.log(`  ${s.name} (${s.location})`);
+  });
 }
 
 main()

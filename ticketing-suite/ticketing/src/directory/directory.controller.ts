@@ -39,4 +39,21 @@ export class DirectoryController {
       select: { key: true, label: true }
     });
   }
+
+  @Get('field-definitions')
+  @Roles('ADMIN', 'USER')
+  fieldDefinitions(@Req() req: any) {
+    return this.prisma.ticketFieldDef.findMany({
+      where: { tenantId: this.tenant(req) },
+      select: { 
+        key: true, 
+        label: true, 
+        datatype: true, 
+        required: true, 
+        enumOptions: true,
+        validation: true,
+        uiHints: true
+      }
+    });
+  }
 }

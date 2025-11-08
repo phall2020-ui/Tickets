@@ -10,7 +10,17 @@ client.interceptors.request.use(cfg => {
 export type SiteOpt = { id: string; name: string }
 export type UserOpt = { id: string; name: string; email: string; role: 'ADMIN' | 'USER' }
 export type IssueTypeOpt = { key: string; label: string }
+export type FieldDefOpt = {
+  key: string
+  label: string
+  datatype: 'string' | 'number' | 'boolean' | 'date' | 'enum'
+  required: boolean
+  enumOptions?: string[]
+  validation?: any
+  uiHints?: any
+}
 
 export const listSites = async () => (await client.get<SiteOpt[]>('/directory/sites')).data
 export const listUsers = async () => (await client.get<UserOpt[]>('/directory/users')).data
 export const listIssueTypes = async () => (await client.get<IssueTypeOpt[]>('/directory/issue-types')).data
+export const listFieldDefinitions = async () => (await client.get<FieldDefOpt[]>('/directory/field-definitions')).data

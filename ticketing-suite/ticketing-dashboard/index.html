@@ -34,6 +34,31 @@
       @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
       .muted { color: var(--muted); font-size: 12px; }
       .chip { padding:4px 8px; background:#0e141c; border:1px solid #223044; border-radius:999px; }
+      .subtle { color: var(--muted); font-size: 13px; }
+      label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      button { cursor: pointer; transition: opacity 0.2s; }
+      button:hover:not(:disabled) { opacity: 0.9; }
+      button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      @media (max-width: 768px) {
+        .container { padding: 12px; }
+        .grid { grid-template-columns: 1fr !important; }
+        table { font-size: 12px; }
+        th, td { padding: 6px; }
+        .row { flex-direction: column; align-items: stretch; }
+        .row > * { width: 100%; }
+        input, select, button { width: 100%; }
+      }
+      @media (max-width: 480px) {
+        .h1 { font-size: 18px; }
+        .panel { padding: 12px; }
+      }
+      [role="button"], button, a { 
+        -webkit-tap-highlight-color: rgba(91, 156, 255, 0.3);
+      }
     </style>
   </head>
   <body>
