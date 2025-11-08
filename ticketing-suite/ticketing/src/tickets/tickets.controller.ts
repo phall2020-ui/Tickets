@@ -12,10 +12,12 @@ import { RolesGuard } from '../auth/roles.guard';
 export class TicketsController {
   constructor(private readonly svc: TicketsService) {}
   private tenant(req: any) { return req.user.tenantId; }
+  private setActor(userId?: string) { (global as any).__actorUserId = userId || null; }
 
   @Post()
   @Roles('ADMIN', 'USER')
   async create(@Req() req: any, @Body() body: CreateTicketDto) {
+    this.setActor(req.user?.sub);
     return this.svc.create(this.tenant(req), {
       siteId: body.siteId,
       type: body.type,
@@ -53,6 +55,7 @@ export class TicketsController {
   @Patch(':id')
   @Roles('ADMIN', 'USER')
   async update(@Req() req: any, @Param('id') id: string, @Body() patch: UpdateTicketDto) {
+    this.setActor(req.user?.sub);
     return this.svc.update(this.tenant(req), id, {
       siteId: patch.siteId,
       type: patch.type,
@@ -63,5 +66,11 @@ export class TicketsController {
       assignedUserId: patch.assignedUserId,
       custom_fields: patch.custom_fields,
     });
+  }
+
+  @Get(':id/history')
+  @Roles('ADMIN', 'USER')
+  async history(@Req() req: any, @Param('id') id: string) {
+    return this.svc.history(this.tenant(req), id);
   }
 }
