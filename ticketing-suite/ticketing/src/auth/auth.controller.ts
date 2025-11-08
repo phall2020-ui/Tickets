@@ -44,13 +44,13 @@ export class UsersController {
     return this.svc.resetPassword(id, body.password);
   }
 
-  @Patch('me')
+  @Patch('profile')
   @Roles('ADMIN', 'USER')
   async updateMe(@Req() req: any, @Body() body: { name?: string; email?: string }) {
     return this.svc.updateUser(req.user.sub, body);
   }
 
-  @Post('me/change-password')
+  @Post('profile/change-password')
   @Roles('ADMIN', 'USER')
   async changePassword(@Req() req: any, @Body() body: { oldPassword: string; newPassword: string }) {
     return this.svc.changePassword(req.user.sub, body.oldPassword, body.newPassword);
