@@ -60,8 +60,8 @@ export class DirectoryController {
     return this.prisma.issueType.update({
       where: { id },
       data: {
-        ...(dto.key && { key: dto.key }),
-        ...(dto.label && { label: dto.label }),
+        ...(dto.key !== undefined && { key: dto.key }),
+        ...(dto.label !== undefined && { label: dto.label }),
         ...(dto.active !== undefined && { active: dto.active })
       }
     });
