@@ -34,8 +34,8 @@ export class UsersController {
 
   @Delete(':id')
   @Roles('ADMIN')
-  async delete(@Param('id') id: string) {
-    return this.svc.deleteUser(id);
+  async delete(@Req() req: any, @Param('id') id: string) {
+    return this.svc.deleteUser(id, req.user.tenantId);
   }
 
   @Post(':id/reset-password')
