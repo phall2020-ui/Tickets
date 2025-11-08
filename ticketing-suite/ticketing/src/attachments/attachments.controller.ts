@@ -8,6 +8,13 @@ import { RolesGuard } from '../auth/roles.guard';
 export class AttachmentsController {
   constructor(private svc: AttachmentsService) {}
   private tenant(req: any) { return req.user.tenantId; }
+  
+  @Get()
+  @Roles('ADMIN', 'USER')
+  async list(@Req() req: any, @Param('ticketId') ticketId: string) {
+    return this.svc.list(this.tenant(req), ticketId);
+  }
+  
   @Post('presign')
   @Roles('ADMIN', 'USER')
   async presign(@Req() req: any, @Param('ticketId') ticketId: string, @Body() dto: { filename: string; mime: string }) {

@@ -1,0 +1,98 @@
+Excellent — here’s a prompt suite you can feed into AI agents (or separate tasks for tools like Claude, GPT, Copilot, etc.) to drive targeted improvements to your Tickets frontend.
+
+It’s split into six logical chunks that correspond to distinct scopes of work — each chunk is self-contained and written as an AI-ready instruction.
+
+⸻
+
+🧩 Prompt 1: Core Feature Completion
+
+Goal: Extend the Tickets UI to use 100% of backend functionality.
+
+Instruction:
+Improve the existing React + Vite frontend by adding all missing core ticket management features. Implement:
+	•	Ticket creation (modal + full-page view).
+	•	Comments with markdown support, @mentions, edit/delete, and live updates via WebSocket.
+	•	File attachments for tickets and comments (drag & drop + preview).
+	•	Advanced search and filtering (by status, priority, assignee, keyword, custom fields).
+	•	Bulk actions for tickets (assign/unassign, status change, label edit).
+	•	Inline editing with optimistic updates and undo/redo.
+
+Ensure full backend API integration, graceful error handling, and form validation. Use local storage to persist unsaved drafts.
+
+⸻
+
+🧩 Prompt 2: UX & Design System
+
+Goal: Modernise UI with consistent visual language.
+
+Instruction:
+Refactor the frontend to adopt a consistent design system (Material UI or Ant Design).
+	•	Replace ad-hoc components with reusable UI primitives (Button, Input, Modal, Tag, Dropdown, DataGrid).
+	•	Apply a global theme (light/dark modes, colour tokens, spacing).
+	•	Add responsive layouts for mobile and tablet.
+	•	Include empty states, skeleton loaders, and consistent icons.
+	•	Integrate accessibility (WCAG 2.2 AA): ARIA labels, keyboard navigation, focus management, screen reader support.
+	•	Document components with Storybook.
+
+⸻
+
+🧩 Prompt 3: State Management & Data Layer
+
+Goal: Improve data flow and performance.
+
+Instruction:
+	•	Introduce TypeScript for full type safety.
+	•	Replace manual fetch calls with React Query (TanStack Query) for caching, retries, and background refetch.
+	•	Implement WebSocket or SSE connections for real-time updates.
+	•	Optimise ticket lists using virtualisation (react-window).
+	•	Add pagination and cursor-based navigation.
+	•	Use React Router v7 data APIs (loaders/actions/defer) for data fetching and mutations.
+	•	Centralise API configuration and error handling.
+
+⸻
+
+🧩 Prompt 4: Security & Authentication
+
+Goal: Harden the app against security vulnerabilities.
+
+Instruction:
+	•	Replace token storage in localStorage with httpOnly cookies where possible.
+	•	Add refresh token rotation and silent session renewal.
+	•	Implement role-based access control (UI visibility and feature gating).
+	•	Add CSRF protection, input sanitisation, and secure markdown rendering.
+	•	Configure strict CSP and Subresource Integrity for third-party scripts.
+	•	Log out on multiple tab updates using BroadcastChannel API.
+
+⸻
+
+🧩 Prompt 5: Observability, Performance & Testing
+
+Goal: Enhance reliability and monitoring.
+
+Instruction:
+	•	Integrate Sentry (error reporting + performance tracing).
+	•	Add Web Vitals and performance budgets (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1).
+	•	Apply code splitting and lazy loading (route-based + component-level).
+	•	Use compression, hashed static assets, and image optimisation.
+	•	Add unit tests (Vitest + RTL) and end-to-end tests (Playwright or Cypress).
+	•	Add accessibility testing (axe-core) and visual regression (Chromatic).
+	•	Set up GitHub Actions or CI pipeline for lint, build, test, and deploy.
+
+⸻
+
+🧩 Prompt 6: Dashboard, Analytics & Extras
+
+Goal: Provide management insights and user personalisation.
+
+Instruction:
+	•	Add advanced dashboard widgets: open vs closed tickets, SLA breaches, workload by user/team, trend charts.
+	•	Allow users to save custom filter views and pin them to the dashboard.
+	•	Implement notifications (toast + inbox).
+	•	Add audit trail (who changed what, when).
+	•	Optional: Add PWA support for offline viewing and background sync.
+	•	Integrate feature flags for staged rollout (e.g., ConfigCat/LaunchDarkly).
+	•	Add analytics events for key flows (login, filter, update, comment).
+
+⸻
+
+Would you like me to combine these into a master AI task file (JSON or Markdown spec) that you can drop into a multi-agent system or task runner? It would include structured task names, dependencies, and expected outputs for each phase.
