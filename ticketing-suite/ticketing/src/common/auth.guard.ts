@@ -26,11 +26,19 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
           Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
         );
         
+        // Determine roles from payload (support both `role` and `roles`)
+        const payloadRoles = Array.isArray(payload.roles)
+          ? payload.roles
+          : payload.role
+          ? [payload.role]
+          : ['USER'];
+
         // Set user on request
         request.user = {
           sub: payload.sub || 'dev-user',
           tenantId: payload.tenantId || 'tenant-1',
-          roles: payload.roles || ['AssetManager', 'OandM'],
+          role: payload.role || payloadRoles[0] || 'USER',
+          roles: payloadRoles,
           email: payload.email || 'dev@example.com'
         };
         

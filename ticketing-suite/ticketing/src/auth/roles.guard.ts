@@ -9,6 +9,9 @@ import { Reflector } from '@nestjs/core';
     const userRole = user?.role || (Array.isArray(user?.roles) ? user.roles[0] : null);
     const roles: string[] = user?.roles ?? (userRole ? [userRole] : []);
     const ok = required.some(r => roles.includes(r));
+    if (!ok) {
+      console.warn('RolesGuard denied access', { required, roles, user });
+    }
     if (!ok) throw new ForbiddenException('Insufficient role');
     return true;
     }
