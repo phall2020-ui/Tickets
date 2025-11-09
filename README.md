@@ -427,6 +427,41 @@ Prisma migrations work seamlessly with Neon:
 npm run prisma:deploy
 ```
 
+## Testing
+
+### Running Tests
+
+The application includes comprehensive test suites that work with minimal configuration:
+
+```bash
+cd ticketing-suite/ticketing
+
+# Run unit tests
+npm run test
+
+# Run e2e tests (requires database)
+npm run test:e2e
+```
+
+### Testing with Optional Features Disabled
+
+Tests are designed to work whether optional features (search, attachments) are enabled or not:
+
+- **Features endpoint test**: Verifies that feature flags correctly reflect environment configuration
+- **Core CRUD tests**: Work without OpenSearch or S3 configured
+- **Search tests**: Use database filtering when OpenSearch is unavailable
+- **Attachment tests**: Can be skipped when S3 is not configured
+
+To run tests with minimal configuration (no OpenSearch/S3):
+```bash
+# Set only required environment variables
+export DATABASE_URL="postgresql://..."
+export REDIS_URL="redis://..."
+
+# Run tests
+npm run test:e2e
+```
+
 ## License
 
 MIT
