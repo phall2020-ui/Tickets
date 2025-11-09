@@ -1,23 +1,5 @@
 import React from 'react'
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Button,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Chip,
-  CircularProgress,
-  Alert,
-  Stack,
-} from '@mui/material'
-import SendIcon from '@mui/icons-material/Send'
-import { useComments, useAddComment } from '../hooks/useTickets'
+import { listComments, addComment, updateComment, deleteComment, type Comment } from '../lib/api'
 
 interface CommentsProps {
   ticketId: string
@@ -29,6 +11,8 @@ export default function Comments({ ticketId }: CommentsProps) {
   
   const [newComment, setNewComment] = React.useState('')
   const [visibility, setVisibility] = React.useState<'PUBLIC' | 'INTERNAL'>('INTERNAL')
+  const [editingId, setEditingId] = React.useState<string | null>(null)
+  const [editText, setEditText] = React.useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,6 +24,40 @@ export default function Comments({ ticketId }: CommentsProps) {
       setVisibility('INTERNAL')
     } catch (error) {
       console.error('Failed to add comment:', error)
+    }
+  }
+
+  const handleEdit = (comment: Comment) => {
+    setEditingId(comment.id)
+    setEditText(comment.body)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const handleSaveEdit = async (commentId: string) => {
+    if (!editText.trim()) return
+
+    try {
+      await updateComment(ticketId, commentId, editText.trim())
+      setEditingId(null)
+      setEditText('')
+      await loadComments()
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to update comment')
+    }
+  }
+
+  const handleDelete = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return
+
+    try {
+      await deleteComment(ticketId, commentId)
+      await loadComments()
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to delete comment')
     }
   }
 
@@ -56,53 +74,79 @@ export default function Comments({ ticketId }: CommentsProps) {
           </Alert>
         )}
 
-        {addCommentMutation.error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            Failed to add comment
-          </Alert>
-        )}
-
-        {isLoading ? (
-          <Box display="flex" justifyContent="center" py={2}>
-            <CircularProgress />
-          </Box>
-        ) : comments.length === 0 ? (
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            No comments yet.
-          </Typography>
-        ) : (
-          <Stack spacing={2} sx={{ mb: 3 }}>
-            {comments.map(comment => (
-              <Card
-                key={comment.id}
-                variant="outlined"
-                sx={{
-                  bgcolor: 'background.default',
-                  border: 1,
-                  borderColor: 'divider',
-                }}
-              >
-                <CardContent>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(comment.createdAt).toLocaleString()}
-                      {comment.userId && ` · User ${comment.userId}`}
-                    </Typography>
-                    <Chip
-                      label={comment.visibility}
-                      size="small"
-                      color={comment.visibility === 'PUBLIC' ? 'success' : 'default'}
-                      sx={{ fontSize: '0.75rem' }}
-                    />
-                  </Box>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                    {comment.body}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-        )}
+      {loading ? (
+        <div className="muted">Loading comments...</div>
+      ) : comments.length === 0 ? (
+        <div className="muted">No comments yet.</div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+          {comments.map(comment => (
+            <div
+              key={comment.id}
+              style={{
+                padding: 12,
+                background: '#0e141c',
+                borderRadius: 8,
+                border: '1px solid #1c2532'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  {new Date(comment.createdAt).toLocaleString()}
+                  {comment.userId && ` · User ${comment.userId}`}
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                      background: comment.visibility === 'PUBLIC' ? '#14311d' : '#2a1a1a',
+                      color: comment.visibility === 'PUBLIC' ? '#a6f0c2' : '#8ca0b3',
+                      border: `1px solid ${comment.visibility === 'PUBLIC' ? '#1d4b2c' : '#3a2c0d'}`
+                    }}
+                  >
+                    {comment.visibility}
+                  </span>
+                  <button
+                    onClick={() => handleEdit(comment)}
+                    style={{ fontSize: 11, padding: '2px 8px' }}
+                    title="Edit comment"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(comment.id)}
+                    style={{ fontSize: 11, padding: '2px 8px', background: '#5a1a1a', borderColor: '#7a2a2a' }}
+                    title="Delete comment"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+              {editingId === comment.id ? (
+                <div>
+                  <textarea
+                    value={editText}
+                    onChange={e => setEditText(e.target.value)}
+                    style={{ width: '100%', minHeight: 60, marginBottom: 8 }}
+                  />
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    <button onClick={handleCancelEdit} style={{ fontSize: 11 }}>Cancel</button>
+                    <button onClick={() => handleSaveEdit(comment.id)} className="primary" style={{ fontSize: 11 }}>
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                  {comment.body}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
         <Box component="form" onSubmit={handleSubmit}>
           <TextField

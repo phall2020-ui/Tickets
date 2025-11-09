@@ -66,6 +66,10 @@ export interface Comment {
 export const listComments = async (ticketId: string) => (await client.get<Comment[]>(`/tickets/${ticketId}/comments`)).data
 export const addComment = async (ticketId: string, body: string, visibility: 'PUBLIC' | 'INTERNAL' = 'INTERNAL') => 
   (await client.post<Comment>(`/tickets/${ticketId}/comments`, { body, visibility })).data
+export const updateComment = async (ticketId: string, commentId: string, body: string) =>
+  (await client.patch<Comment>(`/tickets/${ticketId}/comments/${commentId}`, { body })).data
+export const deleteComment = async (ticketId: string, commentId: string) =>
+  (await client.delete(`/tickets/${ticketId}/comments/${commentId}`)).data
 
 // Attachments API
 export interface Attachment {
@@ -93,6 +97,9 @@ export const presignAttachment = async (ticketId: string, filename: string, mime
 export const finalizeAttachment = async (ticketId: string, attachmentId: string, size: number, checksumSha256: string) =>
   (await client.post<Attachment>(`/tickets/${ticketId}/attachments/${attachmentId}/finalize`, { size, checksumSha256 })).data
 
+export const deleteAttachment = async (ticketId: string, attachmentId: string) =>
+  (await client.delete(`/tickets/${ticketId}/attachments/${attachmentId}`)).data
+
 // Health API
 export interface HealthStatus {
   status: 'ok' | 'error'
@@ -104,3 +111,17 @@ export interface HealthStatus {
 export const getHealth = async () => (await client.get<HealthStatus>('/health')).data
 export const getHealthDb = async () => (await client.get<HealthStatus>('/health/db')).data
 export const getHealthRedis = async () => (await client.get<HealthStatus>('/health/redis')).data
+
+// Site Management API
+export interface Site {
+  id: string
+  name: string
+  location?: string | null
+}
+
+export const listSitesDetailed = async () => (await client.get<Site[]>('/directory/sites')).data
+export const createSite = async (data: { name: string; location?: string }) =>
+  (await client.post<Site>('/directory/sites', data)).data
+export const updateSite = async (id: string, data: { name?: string; location?: string }) =>
+  (await client.patch<Site>(`/directory/sites/${id}`, data)).data
+export const deleteSite = async (id: string) => (await client.delete(`/directory/sites/${id}`)).data
