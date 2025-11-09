@@ -114,20 +114,18 @@ export default function App() {
             </Tooltip>
           )}
           
-          {userRole === 'ADMIN' && (
-            <Tooltip title="Manage Sites">
-              <Button
-                component={Link}
-                to="/sites"
-                startIcon={<LocationIcon />}
-                size="small"
-                sx={{ display: { xs: 'none', md: 'flex' } }}
-                aria-label="Manage sites"
-              >
-                Sites
-              </Button>
-            </Tooltip>
-          )}
+          <Tooltip title="Manage Sites">
+            <Button
+              component={Link}
+              to="/sites"
+              startIcon={<LocationIcon />}
+              size="small"
+              sx={{ display: { xs: 'none', md: 'flex' } }}
+              aria-label="Manage sites"
+            >
+              Sites
+            </Button>
+          </Tooltip>
           
           <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
             <IconButton onClick={toggleTheme} color="inherit" aria-label="Toggle theme">

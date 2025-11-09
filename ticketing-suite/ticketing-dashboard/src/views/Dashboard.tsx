@@ -805,7 +805,8 @@ export default function Dashboard() {
           Total: {stats.total} tickets
         </div>
       </div>
-      <div className="panel">
+      {/* My prioritisation section disabled per user request */}
+      {/* <div className="panel">
         <div className="h1" style={{marginBottom:8}}>My prioritisation</div>
         <div className="muted" style={{marginBottom:12}}>Configure how your dashboard orders tickets. This only affects your view.</div>
         <div className="row" style={{marginBottom:8}}>
@@ -844,7 +845,7 @@ export default function Dashboard() {
         <div className="row">
           <button className="primary" onClick={saveConfig}>Save</button>
         </div>
-      </div>
+      </div> */}
       {showCreate && (
         <CreateTicket
           onClose={() => setShowCreate(false)}
