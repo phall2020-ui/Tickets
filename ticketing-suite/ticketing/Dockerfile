@@ -38,7 +38,7 @@ EXPOSE 3000
 
 # Run DB migrations on startup, then launch NestJS
 # (Your build output is dist/src/main.js per your logs)
-CMD sh -c "npx prisma migrate deploy && node dist/src/main.js"
+CMD sh -c "npx prisma migrate deploy && PORT=${PORT:-3000} HOST=0.0.0.0 node dist/src/main.js"
 
 
 
