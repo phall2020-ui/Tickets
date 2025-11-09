@@ -1,0 +1,361 @@
+// Enhanced Axios Configuration with 403 Error Handling
+// Suggested improvements for ticketing-suite/ticketing-dashboard/src/lib/api.ts
+
+import axios, { AxiosError } from 'axios'
+
+export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
+
+const client = axios.create({ 
+  baseURL: API_BASE,
+  timeout: 30000, // 30 second timeout
+})
+
+// Request interceptor - Add authentication token
+client.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    
+    // Add correlation ID for request tracing
+    config.headers['X-Correlation-ID'] = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// Response interceptor - Enhanced error handling
+client.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error: AxiosError) => {
+    const status = error.response?.status
+    const url = error.config?.url
+    const method = error.config?.method?.toUpperCase()
+    
+    // Log error for debugging
+    console.error(`[API Error] ${method} ${url}`, {
+      status,
+      message: (error.response?.data as any)?.message,
+      correlationId: error.config?.headers?.['X-Correlation-ID']
+    })
+    
+    // Handle specific error codes
+    switch (status) {
+      case 401:
+        // Unauthorized - Token missing or invalid
+        console.warn('401 Unauthorized: Token is missing or invalid')
+        handleUnauthorized()
+        break
+        
+      case 403:
+        // Forbidden - Insufficient permissions
+        const message = (error.response?.data as any)?.message || 'Access forbidden'
+        console.warn('403 Forbidden:', message)
+        handleForbidden(message, url || '')
+        break
+        
+      case 404:
+        // Not Found - Resource doesn't exist or cross-tenant access
+        console.warn('404 Not Found: Resource may not exist or you may not have access')
+        break
+        
+      case 429:
+        // Too Many Requests - Rate limit exceeded
+        console.warn('429 Too Many Requests: Rate limit exceeded. Please wait.')
+        handleRateLimited()
+        break
+        
+      case 500:
+      case 502:
+      case 503:
+        // Server errors
+        console.error('Server error:', status)
+        handleServerError(status)
+        break
+    }
+    
+    return Promise.reject(error)
+  }
+)
+
+// Handler: Unauthorized (401)
+function handleUnauthorized() {
+  // Clear invalid token
+  localStorage.removeItem('token')
+  
+  // Show user-friendly message
+  showNotification('error', 'Your session has expired. Please log in again.')
+  
+  // Redirect to login page (adjust path as needed)
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login?expired=true'
+  }
+}
+
+// Handler: Forbidden (403)
+function handleForbidden(message: string, url: string) {
+  // Determine the type of 403 error
+  let userMessage = 'You do not have permission to perform this action.'
+  let details = ''
+  
+  if (message.includes('Insufficient role')) {
+    userMessage = 'Admin privileges required for this action.'
+    details = 'Please contact your administrator to request elevated permissions.'
+  } else if (message.includes('You can only edit your own')) {
+    userMessage = 'You can only modify your own content.'
+    details = 'This item belongs to another user.'
+  } else if (message.includes('owner')) {
+    userMessage = 'Access denied: You are not the owner of this resource.'
+  }
+  
+  // Show detailed notification
+  showNotification('error', userMessage, details)
+  
+  // Log details for support
+  console.group('403 Forbidden Details')
+  console.log('Message:', message)
+  console.log('URL:', url)
+  console.log('Token payload:', getTokenPayload())
+  console.groupEnd()
+}
+
+// Handler: Rate Limited (429)
+function handleRateLimited() {
+  const retryAfter = 60 // seconds (based on ThrottlerGuard config)
+  
+  showNotification(
+    'warning',
+    'Too many requests',
+    `Please wait ${retryAfter} seconds before trying again.`
+  )
+  
+  // Optional: Disable UI temporarily
+  // disableUIForSeconds(retryAfter)
+}
+
+// Handler: Server Error (5xx)
+function handleServerError(status: number) {
+  showNotification(
+    'error',
+    'Server error',
+    'Something went wrong on the server. Please try again later.'
+  )
+}
+
+// Utility: Show notification to user
+function showNotification(type: 'error' | 'warning' | 'info', title: string, message?: string) {
+  // This is a placeholder - integrate with your actual notification system
+  // Examples: react-toastify, antd message, chakra-ui toast, etc.
+  
+  console[type](`[${type.toUpperCase()}] ${title}${message ? ': ' + message : ''}`)
+  
+  // If using react-toastify:
+  // import { toast } from 'react-toastify'
+  // toast[type](`${title}${message ? '\n' + message : ''}`)
+  
+  // If using antd:
+  // import { message } from 'antd'
+  // message[type]({ content: `${title}${message ? '\n' + message : ''}`, duration: 5 })
+  
+  // Basic browser alert as fallback
+  if (type === 'error') {
+    alert(`${title}${message ? '\n\n' + message : ''}`)
+  }
+}
+
+// Utility: Get decoded token payload
+function getTokenPayload() {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return null
+    
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return {
+      userId: payload.sub,
+      tenantId: payload.tenantId,
+      roles: payload.roles,
+      email: payload.email,
+      expiresAt: new Date(payload.exp * 1000).toISOString()
+    }
+  } catch (error) {
+    console.error('Failed to decode token:', error)
+    return null
+  }
+}
+
+// Utility: Check if token is expired
+function isTokenExpired(): boolean {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return true
+    
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const exp = payload.exp * 1000 // Convert to milliseconds
+    
+    return Date.now() >= exp
+  } catch (error) {
+    return true
+  }
+}
+
+// Utility: Check if user has required role
+export function hasRole(role: 'ADMIN' | 'USER'): boolean {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return false
+    
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const roles = payload.roles || []
+    
+    return roles.includes(role)
+  } catch (error) {
+    return false
+  }
+}
+
+// Utility: Get current user info
+export function getCurrentUser() {
+  return getTokenPayload()
+}
+
+// Export the configured client as default
+export default client
+
+// Export existing API functions (keep all your existing exports)
+export interface Ticket {
+  id: string
+  siteId: string
+  typeKey: string
+  description: string
+  status: 'NEW' | 'TRIAGE' | 'IN_PROGRESS' | 'PENDING' | 'RESOLVED' | 'CLOSED'
+  priority: 'P1' | 'P2' | 'P3' | 'P4'
+  details?: string
+  customFields?: Record<string, any>
+  createdAt: string
+  updatedAt: string
+  assignedUserId?: string | null
+  dueAt?: string | null
+  firstResponseAt?: string | null
+  resolvedAt?: string | null
+}
+
+export type TicketHistoryEntry = {
+  id: string
+  tenantId: string
+  ticketId: string
+  actorUserId?: string | null
+  at: string
+  changes: Record<string, { from: any; to: any }>
+}
+
+export const listTickets = async (params?: Record<string, any>) => {
+  const cleanParams: Record<string, any> = {}
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') cleanParams[k] = v
+    })
+  }
+  return (await client.get<Ticket[]>('/tickets', { params: cleanParams })).data
+}
+
+export const getTicket = async (id: string) => (await client.get<Ticket>(`/tickets/${id}`)).data
+
+export const createTicket = async (data: {
+  siteId: string
+  type: string
+  description: string
+  status: Ticket['status']
+  priority: Ticket['priority']
+  details?: string
+  assignedUserId?: string
+  custom_fields?: Record<string, any>
+}) => (await client.post<Ticket>('/tickets', data)).data
+
+export const updateTicket = async (id: string, patch: Partial<Ticket> & { custom_fields?: any }) => 
+  (await client.patch<Ticket>(`/tickets/${id}`, patch)).data
+
+export const listTicketHistory = async (id: string) => 
+  (await client.get<TicketHistoryEntry[]>(`/tickets/${id}/history`)).data
+
+// Comments API
+export interface Comment {
+  id: string
+  ticketId: string
+  body: string
+  visibility: 'PUBLIC' | 'INTERNAL'
+  createdAt: string
+  userId?: string
+}
+
+export const listComments = async (ticketId: string) => 
+  (await client.get<Comment[]>(`/tickets/${ticketId}/comments`)).data
+
+export const addComment = async (ticketId: string, body: string, visibility: 'PUBLIC' | 'INTERNAL' = 'INTERNAL') => 
+  (await client.post<Comment>(`/tickets/${ticketId}/comments`, { body, visibility })).data
+
+export const updateComment = async (ticketId: string, commentId: string, body: string) =>
+  (await client.patch<Comment>(`/tickets/${ticketId}/comments/${commentId}`, { body })).data
+
+export const deleteComment = async (ticketId: string, commentId: string) =>
+  (await client.delete(`/tickets/${ticketId}/comments/${commentId}`)).data
+
+// Attachments API
+export interface Attachment {
+  id: string
+  ticketId: string
+  filename: string
+  mimeType: string
+  sizeBytes: number
+  createdAt: string
+  downloadUrl: string
+}
+
+export interface PresignResponse {
+  url: string
+  attachmentId: string
+  fields: Record<string, string>
+}
+
+export const listAttachments = async (ticketId: string) =>
+  (await client.get<Attachment[]>(`/tickets/${ticketId}/attachments`)).data
+
+export const presignAttachment = async (ticketId: string, filename: string, mime: string) =>
+  (await client.post<PresignResponse>(`/tickets/${ticketId}/attachments/presign`, { filename, mime })).data
+
+export const finalizeAttachment = async (ticketId: string, attachmentId: string, size: number, checksumSha256: string) =>
+  (await client.post<Attachment>(`/tickets/${ticketId}/attachments/${attachmentId}/finalize`, { size, checksumSha256 })).data
+
+export const deleteAttachment = async (ticketId: string, attachmentId: string) =>
+  (await client.delete(`/tickets/${ticketId}/attachments/${attachmentId}`)).data
+
+// Health API
+export interface HealthStatus {
+  status: 'ok' | 'error'
+  info?: Record<string, { status: string; [key: string]: any }>
+  error?: Record<string, { status: string; message?: string }>
+  details?: Record<string, any>
+}
+
+export const getHealth = async () => (await client.get<HealthStatus>('/health')).data
+export const getHealthDb = async () => (await client.get<HealthStatus>('/health/db')).data
+export const getHealthRedis = async () => (await client.get<HealthStatus>('/health/redis')).data
+
+// Site Management API
+export interface Site {
+  id: string
+  name: string
+  location?: string | null
+}
+
+export const listSitesDetailed = async () => (await client.get<Site[]>('/directory/sites')).data
+export const createSite = async (data: { name: string; location?: string }) =>
+  (await client.post<Site>('/directory/sites', data)).data
+export const updateSite = async (id: string, data: { name?: string; location?: string }) =>
+  (await client.patch<Site>(`/directory/sites/${id}`, data)).data
+export const deleteSite = async (id: string) => (await client.delete(`/directory/sites/${id}`)).data
