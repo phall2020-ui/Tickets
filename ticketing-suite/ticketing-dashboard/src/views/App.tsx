@@ -22,6 +22,8 @@ import {
   LocationOn as LocationIcon,
 } from '@mui/icons-material'
 import UserRegistration from '../components/UserRegistration'
+import IssueTypeManagement from '../components/IssueTypeManagement'
+import FieldDefinitionManagement from '../components/FieldDefinitionManagement'
 import { useNotifications } from '../lib/notifications'
 import { useThemeMode } from '../theme/ThemeProvider'
 
@@ -32,6 +34,8 @@ export default function App() {
   const [token, setToken] = React.useState(localStorage.getItem('token') || '')
   const [user, setUser] = React.useState(localStorage.getItem('userId') || '')
   const [showUserReg, setShowUserReg] = React.useState(false)
+  const [showIssueTypes, setShowIssueTypes] = React.useState(false)
+  const [showFieldDefs, setShowFieldDefs] = React.useState(false)
   const [userRole, setUserRole] = React.useState<'ADMIN' | 'USER' | null>(null)
   
   const save = () => { 
@@ -184,6 +188,24 @@ export default function App() {
           onClose={() => setShowUserReg(false)}
           onSuccess={() => {
             setShowUserReg(false)
+          }}
+        />
+      )}
+      
+      {showIssueTypes && (
+        <IssueTypeManagement
+          onClose={() => setShowIssueTypes(false)}
+          onSuccess={() => {
+            showNotification('success', 'Issue types updated')
+          }}
+        />
+      )}
+      
+      {showFieldDefs && (
+        <FieldDefinitionManagement
+          onClose={() => setShowFieldDefs(false)}
+          onSuccess={() => {
+            showNotification('success', 'Field definitions updated')
           }}
         />
       )}

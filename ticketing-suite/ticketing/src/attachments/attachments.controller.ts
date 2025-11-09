@@ -20,6 +20,7 @@ export class AttachmentsController {
   async presign(@Req() req: any, @Param('ticketId') ticketId: string, @Body() dto: { filename: string; mime: string }) {
     return this.svc.createPresigned(this.tenant(req), ticketId, dto.filename, dto.mime);
   }
+  
   @Post(':attachmentId/finalize')
   @Roles('ADMIN', 'USER')
   async finalize(@Req() req: any, @Param('attachmentId') attachmentId: string, @Body() dto: { size: number; checksumSha256: string }) {
