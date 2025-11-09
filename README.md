@@ -252,6 +252,61 @@ The backend provides health check endpoints:
 - `/health/redis` - Redis health
 - `/health/opensearch` - OpenSearch health
 
+## Troubleshooting
+
+### 403 Forbidden Errors
+
+If you encounter 403 Forbidden errors when accessing the API, see the comprehensive troubleshooting guide:
+- **[403 Error Troubleshooting Guide](./TROUBLESHOOTING_403_ERRORS.md)** - Detailed analysis and solutions
+
+Quick diagnostics:
+```bash
+# Run the diagnostic tool
+./scripts/diagnose-403.sh
+
+# Validate environment variables
+./scripts/validate-env.sh
+
+# Check your token
+./scripts/diagnose-403.sh check-token <your-jwt-token>
+
+# Generate a test token
+./scripts/diagnose-403.sh generate-token test-user tenant-1 USER
+```
+
+Common causes of 403 errors:
+1. **Missing JWT Token** - Ensure you're logged in and token is in localStorage
+2. **Insufficient Role** - Check if you need ADMIN role for the operation
+3. **Cross-Tenant Access** - Verify your tenantId matches the resource
+4. **Resource Ownership** - You can only edit/delete your own comments
+5. **Rate Limiting** - Wait 60 seconds if you hit the rate limit (120 req/min)
+
+See the [troubleshooting guide](./TROUBLESHOOTING_403_ERRORS.md) for detailed fixes and testing procedures.
+
+## Testing
+
+### Backend Tests
+
+```bash
+cd ticketing-suite/ticketing
+
+# Run unit tests
+npm test
+
+# Run E2E tests (including 403 error scenarios)
+npm run test:e2e
+
+# Run specific test suite
+npm run test:e2e -- --testNamePattern="403"
+```
+
+The test suite includes comprehensive 403 error scenario testing covering:
+- Authentication errors (401 vs 403)
+- RBAC and role-based access
+- Multi-tenancy isolation
+- Resource ownership violations
+- CORS preflight handling
+
 ## License
 
 MIT
