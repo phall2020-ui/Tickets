@@ -13,7 +13,7 @@ export interface Ticket {
   typeKey: string
   description: string
   status: TicketStatusValue
-  priority: 'P1' | 'P2' | 'P3' | 'P4'
+  priority: 'High' | 'Medium' | 'Low'
   details?: string
   customFields?: Record<string, any>
   createdAt: string

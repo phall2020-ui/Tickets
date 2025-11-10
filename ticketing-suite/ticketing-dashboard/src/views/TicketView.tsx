@@ -8,8 +8,6 @@ import Comments from '../components/Comments'
 import Attachments from '../components/Attachments'
 import CustomFieldsForm from '../components/CustomFieldsForm'
 import { useNotifications } from '../lib/notifications'
-import { STATUS_OPTIONS } from '../lib/statuses'
-import { filterFieldDefs, sanitizeCustomFieldValues } from '../lib/customFields'
 
 // User avatar component
 const UserAvatar: React.FC<{ user?: UserOpt; size?: number }> = ({ user, size = 32 }) => {

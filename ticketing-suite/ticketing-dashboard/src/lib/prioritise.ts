@@ -1,29 +1,26 @@
 import type { Ticket } from './api'
 
-const basePriorityWeights = { P1: 50, P2: 20, P3: 5, P4: 1 } as const
+const basePriorityWeights = { High: 50, Medium: 20, Low: 5 } as const
 type PriorityLevel = keyof typeof basePriorityWeights
 
 const normalizePriorityWeights = (weights?: Partial<Record<string, number>>): Record<PriorityLevel, number> => ({
-  P1: typeof weights?.P1 === 'number'
-    ? weights.P1
-    : typeof weights?.High === 'number'
-      ? weights.High
-      : basePriorityWeights.P1,
-  P2: typeof weights?.P2 === 'number'
-    ? weights.P2
-    : typeof weights?.Medium === 'number'
-      ? weights.Medium
-      : basePriorityWeights.P2,
-  P3: typeof weights?.P3 === 'number'
-    ? weights.P3
-    : typeof weights?.Low === 'number'
-      ? weights.Low
-      : basePriorityWeights.P3,
-  P4: typeof weights?.P4 === 'number'
-    ? weights.P4
-    : typeof weights?.VeryLow === 'number'
-      ? weights.VeryLow
-      : basePriorityWeights.P4,
+  High: typeof weights?.High === 'number'
+    ? weights.High
+    : typeof weights?.P1 === 'number'
+      ? weights.P1
+      : basePriorityWeights.High,
+  Medium: typeof weights?.Medium === 'number'
+    ? weights.Medium
+    : typeof weights?.P2 === 'number'
+      ? weights.P2
+      : basePriorityWeights.Medium,
+  Low: typeof weights?.Low === 'number'
+    ? weights.Low
+    : typeof weights?.P3 === 'number'
+      ? weights.P3
+      : typeof weights?.P4 === 'number'
+        ? weights.P4
+        : basePriorityWeights.Low,
 })
 
 const baseStatusWeights: Partial<Record<Ticket['status'], number>> = {
