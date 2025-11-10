@@ -120,6 +120,10 @@ if [ ! -d "node_modules" ]; then
     npm install --legacy-peer-deps
 fi
 
+# Build the backend
+echo "Building backend..."
+npm run build
+
 # Run migrations and seed
 echo "Running database migrations..."
 npx prisma generate
@@ -137,7 +141,7 @@ npm run seed || true
 
 # Start backend in background
 echo "Starting backend API..."
-npm run start:dev > /tmp/backend.log 2>&1 &
+npm run start > /tmp/backend.log 2>&1 &
 BACKEND_PID=$!
 echo "Backend PID: $BACKEND_PID"
 
@@ -174,7 +178,7 @@ cat > .env << 'EOF'
 VITE_API_BASE=http://localhost:3000
 EOF
 
-# Start dashboard in background
+# Start dashboard in background using dev mode
 echo "Starting dashboard..."
 npm run dev > /tmp/dashboard.log 2>&1 &
 DASHBOARD_PID=$!
@@ -218,7 +222,7 @@ fi
 
 # Install Playwright browsers if needed
 echo "Checking Playwright browsers..."
-npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
+npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium 2>/dev/null || echo "Skipping Playwright browser install (may already be installed)"
 
 echo ""
 echo -e "${BLUE}🧪 Running E2E Tests...${NC}"

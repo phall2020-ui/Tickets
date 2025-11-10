@@ -1,18 +1,32 @@
 -- Create new enum with target values
 CREATE TYPE "TicketStatus_new" AS ENUM ('AWAITING_RESPONSE', 'ADE_TO_RESPOND', 'ON_HOLD', 'CLOSED');
 
--- Update ticket statuses to the new values while transferring column type
-ALTER TABLE "Ticket"
-  ALTER COLUMN "status" TYPE "TicketStatus_new"
-  USING (
-    CASE
-      WHEN status IN ('NEW', 'TRIAGE') THEN 'AWAITING_RESPONSE'::"TicketStatus_new"
-      WHEN status IN ('IN_PROGRESS') THEN 'ADE_TO_RESPOND'::"TicketStatus_new"
-      WHEN status = 'PENDING' THEN 'ON_HOLD'::"TicketStatus_new"
-      WHEN status IN ('RESOLVED', 'CLOSED') THEN 'CLOSED'::"TicketStatus_new"
-      ELSE 'AWAITING_RESPONSE'::"TicketStatus_new"
-    END
-  );
+-- Check if table has any rows and update accordingly
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM "Ticket" LIMIT 1) THEN
+    -- Update ticket statuses to the new values while transferring column type
+    ALTER TABLE "Ticket"
+      ALTER COLUMN "status" TYPE "TicketStatus_new"
+      USING (
+        CASE
+          WHEN status::text IN ('NEW', 'TRIAGE') THEN 'AWAITING_RESPONSE'::"TicketStatus_new"
+          WHEN status::text IN ('IN_PROGRESS') THEN 'ADE_TO_RESPOND'::"TicketStatus_new"
+          WHEN status::text = 'PENDING' THEN 'ON_HOLD'::"TicketStatus_new"
+          WHEN status::text IN ('RESOLVED', 'CLOSED') THEN 'CLOSED'::"TicketStatus_new"
+          ELSE 'AWAITING_RESPONSE'::"TicketStatus_new"
+        END
+      );
+  ELSE
+    -- Table is empty, just change the column type
+    ALTER TABLE "Ticket"
+      ALTER COLUMN "status" TYPE "TicketStatus_new"
+      USING 'AWAITING_RESPONSE'::"TicketStatus_new";
+    -- Set default for the column
+    ALTER TABLE "Ticket"
+      ALTER COLUMN "status" SET DEFAULT 'AWAITING_RESPONSE'::"TicketStatus_new";
+  END IF;
+END$$;
 
 -- Replace old enum type with the new definition
 DROP TYPE "TicketStatus";
