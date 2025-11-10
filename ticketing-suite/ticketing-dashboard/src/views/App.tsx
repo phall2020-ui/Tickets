@@ -58,19 +58,6 @@ export default function App() {
             </Typography>
           </Link>
           
-          <Tooltip title="User Profile">
-            <Button
-              component={Link}
-              to="/profile"
-              startIcon={<PersonIcon />}
-              size="small"
-              sx={{ display: { xs: 'none', md: 'flex' } }}
-              aria-label="User profile"
-            >
-              Profile
-            </Button>
-          </Tooltip>
-
           <Tooltip title="Create Ticket">
             <Button
               onClick={handleOpenCreateTicket}
@@ -82,6 +69,19 @@ export default function App() {
               aria-label="Create ticket"
             >
               New Ticket
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="User Profile">
+            <Button
+              component={Link}
+              to="/profile"
+              startIcon={<PersonIcon />}
+              size="small"
+              sx={{ display: { xs: 'none', md: 'flex' } }}
+              aria-label="User profile"
+            >
+              Profile
             </Button>
           </Tooltip>
           

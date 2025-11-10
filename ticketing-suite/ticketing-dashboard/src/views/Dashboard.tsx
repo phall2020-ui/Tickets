@@ -17,24 +17,93 @@ import { useKeyboardShortcuts, SHORTCUT_CATEGORIES, type KeyboardShortcut } from
 import { useSavedViews, type SavedView } from '../hooks/useSavedViews'
 import { STATUS_OPTIONS, STATUS_LABELS } from '../lib/statuses'
 
-const modernButtonStyle: React.CSSProperties = {
-  padding: '8px 14px',
+const CONTROL_HEIGHT = 36
+
+const baseButtonStyle: React.CSSProperties = {
+  padding: '0 16px',
   borderRadius: 12,
-  border: '1px solid #2a2a2a',
-  background: 'linear-gradient(145deg, rgba(45,45,45,0.72), rgba(20,20,20,0.72))',
-  color: '#e5e5e5',
+  border: '1px solid #d6d9dd',
+  background: '#f8fafc',
+  color: '#1e293b',
   fontSize: 13,
   fontWeight: 600,
-  letterSpacing: 0.2,
-  transition: 'transform 0.15s ease, box-shadow 0.15s ease, border 0.15s ease',
+  height: CONTROL_HEIGHT,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  letterSpacing: 0.1,
+  transition: 'transform 0.15s ease, box-shadow 0.15s ease, border 0.15s ease, background 0.15s ease, color 0.15s ease',
   cursor: 'pointer'
 }
 
-const StatusFilter: React.FC<{value:string,onChange:(v:string)=>void}> = ({value,onChange}) => (
-  <select value={value} onChange={e=>onChange(e.target.value)}>
-    <option value="">All statuses</option>
-    {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-  </select>
+const primaryButtonStyle: React.CSSProperties = {
+  ...baseButtonStyle,
+  background: '#2563eb',
+  color: '#ffffff',
+  border: '1px solid #1d4ed8'
+}
+
+const segmentContainerStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: 4,
+  borderRadius: 999,
+  background: '#f1f5f9',
+  border: '1px solid #d5dce5',
+  height: CONTROL_HEIGHT
+}
+
+const segmentButtonStyle: React.CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#475569',
+  fontSize: 12,
+  fontWeight: 600,
+  padding: '6px 14px',
+  borderRadius: 999,
+  cursor: 'pointer',
+  height: CONTROL_HEIGHT - 8,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'background 0.2s ease, color 0.2s ease, transform 0.15s ease'
+}
+
+const segmentButtonActiveStyle: React.CSSProperties = {
+  background: '#ffffff',
+  color: '#1e3a8a',
+  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)'
+}
+
+const StatusFilter: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+    <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Status</span>
+    <div style={segmentContainerStyle} role="group" aria-label="Filter by status">
+      <button
+        type="button"
+        onClick={() => onChange('')}
+        style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}) }}
+        aria-pressed={value === ''}
+      >
+        All
+      </button>
+      {STATUS_OPTIONS.map(option => {
+        const isActive = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
+            aria-pressed={isActive}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  </div>
 )
 
 // User avatar component
@@ -599,16 +668,17 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
 
   const selectedTickets = sortedTickets.filter(t => selectedTicketIds.has(t.id))
   const quickViewIndex = quickViewTicketId ? sortedTickets.findIndex(t => t.id === quickViewTicketId) : -1
-  const handleButtonHoverIn = React.useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const buttonHoverIn = React.useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'translateY(-2px)'
-    e.currentTarget.style.boxShadow = '0 8px 18px rgba(0,0,0,0.45)'
-    e.currentTarget.style.border = '1px solid rgba(90, 156, 255, 0.35)'
+    e.currentTarget.style.boxShadow = '0 8px 16px rgba(15, 23, 42, 0.12)'
+    e.currentTarget.style.border = '1px solid #94a3b8'
   }, [])
 
-  const handleButtonHoverOut = React.useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const buttonHoverOut = React.useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'translateY(0)'
     e.currentTarget.style.boxShadow = 'none'
-    e.currentTarget.style.border = '1px solid #2a2a2a'
+    const originalBorder = e.currentTarget.dataset.border ?? '#d6d9dd'
+    e.currentTarget.style.border = originalBorder
   }, [])
 
   return (
@@ -619,17 +689,19 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
           style={{
             marginBottom: 16,
             flexWrap: 'wrap',
-            gap: 12,
-            alignItems: 'center'
+            gap: 16,
+            alignItems: 'center',
+            justifyContent: 'space-between'
           }}
         >
           <div
             style={{
               display: 'flex',
-              gap: 8,
+              gap: 12,
               alignItems: 'center',
               flex: 1,
-              minWidth: 220
+              minWidth: 280,
+              maxWidth: 520
             }}
           >
             <div style={{ position: 'relative', flex: 1 }}>
@@ -640,7 +712,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                   left: 12,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#7a7a7a',
+                  color: '#64748b',
                   fontSize: 14
                 }}
               >
@@ -655,9 +727,10 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                   width: '100%',
                   padding: '10px 12px 10px 34px',
                   borderRadius: 999,
-                  border: '1px solid #2a2a2a',
-                  background: '#141414',
-                  color: '#f0f0f0'
+                  border: '1px solid #d7dbe3',
+                  background: '#ffffff',
+                  color: '#111827',
+                  boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)'
                 }}
                 aria-label="Search tickets"
               />
@@ -668,71 +741,79 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
           <div
             style={{
               display: 'flex',
-              gap: 8,
+              gap: 12,
               flexWrap: 'wrap',
-              alignItems: 'center'
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              flex: 1
             }}
           >
             <button
               onClick={() => setShowAdvancedSearch(true)}
               aria-label="Advanced search"
-              style={{ ...modernButtonStyle }}
-              onMouseEnter={handleButtonHoverIn}
-              onMouseLeave={handleButtonHoverOut}
+              style={{ ...baseButtonStyle }}
+              data-border="1px solid #d6d9dd"
+              onMouseEnter={buttonHoverIn}
+              onMouseLeave={buttonHoverOut}
             >
               Advanced
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
               aria-label="Toggle filters"
-              style={{ ...modernButtonStyle }}
-              onMouseEnter={handleButtonHoverIn}
-              onMouseLeave={handleButtonHoverOut}
+              style={{ ...baseButtonStyle }}
+              data-border="1px solid #d6d9dd"
+              onMouseEnter={buttonHoverIn}
+              onMouseLeave={buttonHoverOut}
             >
               Filters {activeFilters > 0 && `(${activeFilters})`}
             </button>
-            <select
-              value={pageSize}
-              onChange={e => setPageSize(Number(e.target.value))}
-              style={{
-                minWidth: 100,
-                borderRadius: 12,
-                padding: '8px 12px',
-                border: '1px solid #2a2a2a',
-                background: '#141414',
-                color: '#e0e0e0'
-              }}
-              aria-label="Page size"
-            >
-              <option value={10}>10 / page</option>
-              <option value={25}>25 / page</option>
-              <option value={50}>50 / page</option>
-              <option value={100}>100 / page</option>
-            </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Rows</span>
+              <div style={segmentContainerStyle} role="group" aria-label="Rows per page">
+                {[10, 25, 50, 100].map(size => {
+                  const isActive = pageSize === size
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setPageSize(size)}
+                      style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
+                      aria-pressed={isActive}
+                    >
+                      {size}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
             <button
               onClick={() => handleExport('csv')}
               aria-label="Export to CSV"
-              style={{ ...modernButtonStyle }}
-              onMouseEnter={handleButtonHoverIn}
-              onMouseLeave={handleButtonHoverOut}
+              style={{ ...baseButtonStyle }}
+              data-border="1px solid #d6d9dd"
+              onMouseEnter={buttonHoverIn}
+              onMouseLeave={buttonHoverOut}
             >
               CSV
             </button>
             <button
               onClick={() => handleExport('json')}
               aria-label="Export to JSON"
-              style={{ ...modernButtonStyle }}
-              onMouseEnter={handleButtonHoverIn}
-              onMouseLeave={handleButtonHoverOut}
+              style={{ ...baseButtonStyle }}
+              data-border="1px solid #d6d9dd"
+              onMouseEnter={buttonHoverIn}
+              onMouseLeave={buttonHoverOut}
             >
               JSON
             </button>
             <button
               onClick={() => fetchList(true)}
               aria-label="Refresh tickets"
-              style={{ ...modernButtonStyle }}
-              onMouseEnter={handleButtonHoverIn}
-              onMouseLeave={handleButtonHoverOut}
+              style={{ ...primaryButtonStyle }}
+              data-border="1px solid #1d4ed8"
+              onMouseEnter={buttonHoverIn}
+              onMouseLeave={buttonHoverOut}
             >
               Refresh
             </button>
@@ -1099,7 +1180,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             )}
           </div>
         </div>
-        <div style={{ fontSize: 12, color: '#999', marginTop: 16 }}>
+        <div style={{ fontSize: 12, color: '#475569', marginTop: 16 }}>
           Total: {stats.total} ticket{stats.total === 1 ? '' : 's'}
         </div>
       </div>
