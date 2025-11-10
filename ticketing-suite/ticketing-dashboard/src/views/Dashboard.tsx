@@ -77,32 +77,29 @@ const segmentButtonActiveStyle: React.CSSProperties = {
 }
 
 const StatusFilter: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
-  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-    <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Status</span>
-    <div style={segmentContainerStyle} role="group" aria-label="Filter by status">
-      <button
-        type="button"
-        onClick={() => onChange('')}
-        style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}) }}
-        aria-pressed={value === ''}
-      >
-        All
-      </button>
-      {STATUS_OPTIONS.map(option => {
-        const isActive = value === option.value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
-            aria-pressed={isActive}
-          >
-            {option.label}
-          </button>
-        )
-      })}
-    </div>
+  <div style={segmentContainerStyle} role="group" aria-label="Filter by status">
+    <button
+      type="button"
+      onClick={() => onChange('')}
+      style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}) }}
+      aria-pressed={value === ''}
+    >
+      All
+    </button>
+    {STATUS_OPTIONS.map(option => {
+      const isActive = value === option.value
+      return (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
+          aria-pressed={isActive}
+        >
+          {option.label}
+        </button>
+      )
+    })}
   </div>
 )
 
@@ -688,66 +685,75 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
           className="row"
           style={{
             marginBottom: 16,
+            gap: 12,
             flexWrap: 'wrap',
-            gap: 16,
-            alignItems: 'center',
-            justifyContent: 'space-between'
+            alignItems: 'center'
           }}
         >
           <div
             style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'center',
+              position: 'relative',
               flex: 1,
-              minWidth: 280,
-              maxWidth: 520
+              minWidth: 220,
+              maxWidth: 340
             }}
           >
-            <div style={{ position: 'relative', flex: 1 }}>
-              <span
-                aria-hidden
-                style={{
-                  position: 'absolute',
-                  left: 12,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#64748b',
-                  fontSize: 14
-                }}
-              >
-                🔍
-              </span>
-              <input
-                placeholder="Search tickets..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && fetchList(true)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 34px',
-                  borderRadius: 999,
-                  border: '1px solid #d7dbe3',
-                  background: '#ffffff',
-                  color: '#111827',
-                  boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)'
-                }}
-                aria-label="Search tickets"
-              />
-            </div>
-            <StatusFilter value={status} onChange={setStatus} />
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                left: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#64748b',
+                fontSize: 14
+              }}
+            >
+              🔍
+            </span>
+            <input
+              placeholder="Search tickets..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && fetchList(true)}
+              style={{
+                width: '100%',
+                padding: '10px 12px 10px 34px',
+                borderRadius: 999,
+                border: '1px solid #d7dbe3',
+                background: '#ffffff',
+                color: '#111827',
+                boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)',
+                height: CONTROL_HEIGHT
+              }}
+              aria-label="Search tickets"
+            />
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              flex: 1
-            }}
-          >
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <StatusFilter value={status} onChange={setStatus} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Rows</span>
+              <div style={segmentContainerStyle} role="group" aria-label="Rows per page">
+                {[10, 25, 50, 100].map(size => {
+                  const isActive = pageSize === size
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setPageSize(size)}
+                      style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
+                      aria-pressed={isActive}
+                    >
+                      {size}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
             <button
               onClick={() => setShowAdvancedSearch(true)}
               aria-label="Advanced search"
@@ -768,25 +774,6 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             >
               Filters {activeFilters > 0 && `(${activeFilters})`}
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Rows</span>
-              <div style={segmentContainerStyle} role="group" aria-label="Rows per page">
-                {[10, 25, 50, 100].map(size => {
-                  const isActive = pageSize === size
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setPageSize(size)}
-                      style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
-                      aria-pressed={isActive}
-                    >
-                      {size}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
             <button
               onClick={() => handleExport('csv')}
               aria-label="Export to CSV"
