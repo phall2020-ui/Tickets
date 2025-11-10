@@ -37,20 +37,27 @@ export class RedisHealthIndicator extends HealthIndicator {
     }
   }
 
-  async isHealthy(): Promise<HealthIndicatorResult> { 
+  async isHealthy(): Promise<HealthIndicatorResult> {
     if (!this.redis) {
       return this.getStatus('redis', false, { message: 'Redis client not initialized' });
     }
 
-    try { 
-      const pong = await this.redis.ping(); 
-      return this.getStatus('redis', pong === 'PONG', { 
-        message: pong === 'PONG' ? 'Connected' : 'Unexpected response' 
-      }); 
-    } catch (error: any) { 
-      return this.getStatus('redis', false, { 
-        message: this.connectionError || error.message || 'Connection failed' 
-      }); 
-    } 
+    try {
+      // Add a 2s timeout to ping to prevent long blocking
+      const pingPromise = this.redis.ping();
+      const pong = await Promise.race([
+        pingPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('ping timeout')), 2000))
+      ]);
+
+      const ok = pong === 'PONG';
+      return this.getStatus('redis', ok, {
+        message: ok ? 'Connected' : `Unexpected response: ${String(pong)}`
+      });
+    } catch (error: any) {
+      return this.getStatus('redis', false, {
+        message: this.connectionError || error.message || 'Connection failed'
+      });
+    }
   }
 }

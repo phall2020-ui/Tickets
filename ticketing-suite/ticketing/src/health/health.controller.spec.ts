@@ -9,8 +9,13 @@ describe('HealthController', () => {
   let healthCheckService: HealthCheckService;
   let prismaHealth: PrismaHealthIndicator;
   let redisHealth: RedisHealthIndicator;
+  const originalEnv = process.env;
 
   beforeEach(async () => {
+    // Reset environment before each test
+    process.env = { ...originalEnv };
+    delete process.env.SKIP_REDIS_HEALTH;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
       providers: [
@@ -39,6 +44,11 @@ describe('HealthController', () => {
     healthCheckService = module.get<HealthCheckService>(HealthCheckService);
     prismaHealth = module.get<PrismaHealthIndicator>(PrismaHealthIndicator);
     redisHealth = module.get<RedisHealthIndicator>(RedisHealthIndicator);
+  });
+
+  afterEach(() => {
+    // Restore environment after each test
+    process.env = originalEnv;
   });
 
   it('should be defined', () => {
@@ -70,6 +80,60 @@ describe('HealthController', () => {
   });
 
   it('should call both health indicators', async () => {
+    const mockHealthResult = {
+      status: 'ok',
+      info: {},
+      error: {},
+      details: {},
+    };
+
+    jest.spyOn(healthCheckService, 'check').mockImplementation(async (checks) => {
+      // Execute the health check functions
+      for (const check of checks) {
+        await check();
+      }
+      return mockHealthResult as any;
+    });
+
+    const prismaSpy = jest.spyOn(prismaHealth, 'isHealthy').mockResolvedValue({ database: { status: 'up' } } as HealthIndicatorResult);
+    const redisSpy = jest.spyOn(redisHealth, 'isHealthy').mockResolvedValue({ redis: { status: 'up' } } as HealthIndicatorResult);
+
+    await controller.check();
+
+    expect(prismaSpy).toHaveBeenCalled();
+    expect(redisSpy).toHaveBeenCalled();
+  });
+
+  it('should skip Redis health check when SKIP_REDIS_HEALTH is true', async () => {
+    process.env.SKIP_REDIS_HEALTH = 'true';
+
+    const mockHealthResult = {
+      status: 'ok',
+      info: {},
+      error: {},
+      details: {},
+    };
+
+    jest.spyOn(healthCheckService, 'check').mockImplementation(async (checks) => {
+      // Execute the health check functions
+      for (const check of checks) {
+        await check();
+      }
+      return mockHealthResult as any;
+    });
+
+    const prismaSpy = jest.spyOn(prismaHealth, 'isHealthy').mockResolvedValue({ database: { status: 'up' } } as HealthIndicatorResult);
+    const redisSpy = jest.spyOn(redisHealth, 'isHealthy').mockResolvedValue({ redis: { status: 'up' } } as HealthIndicatorResult);
+
+    await controller.check();
+
+    expect(prismaSpy).toHaveBeenCalled();
+    expect(redisSpy).not.toHaveBeenCalled();
+  });
+
+  it('should include Redis health check when SKIP_REDIS_HEALTH is not set', async () => {
+    delete process.env.SKIP_REDIS_HEALTH;
+
     const mockHealthResult = {
       status: 'ok',
       info: {},
