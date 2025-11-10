@@ -1,7 +1,7 @@
 import React from 'react'
 import { bulkDeleteTickets, bulkUpdateTickets, listTickets, type Ticket } from '../lib/api'
 import { sortTickets, loadCfg, saveCfg, type PriorityCfg } from '../lib/prioritise'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import CreateTicket from '../components/CreateTicket'
 import AdvancedSearch from '../components/AdvancedSearch'
 import SavedViews from '../components/SavedViews'
@@ -17,7 +17,7 @@ import { exportToCSV, exportToJSON } from '../lib/export'
 import { useKeyboardShortcuts, SHORTCUT_CATEGORIES, type KeyboardShortcut } from '../hooks/useKeyboardShortcuts'
 import { useSavedViews, type SavedView } from '../hooks/useSavedViews'
 import { useTicketTemplates } from '../hooks/useTicketTemplates'
-import { STATUS_OPTIONS } from '../lib/statuses'
+import { STATUS_OPTIONS, STATUS_LABELS } from '../lib/statuses'
 
 const StatusFilter: React.FC<{value:string,onChange:(v:string)=>void}> = ({value,onChange}) => (
   <select value={value} onChange={e=>onChange(e.target.value)}>
@@ -144,7 +144,6 @@ const TicketRow: React.FC<{
 }
 
 export default function Dashboard() {
-  const nav = useNavigate()
   const { showNotification } = useNotifications()
   const [tickets, setTickets] = React.useState<Ticket[]>([])
   const [status, setStatus] = React.useState('')
@@ -316,6 +315,7 @@ export default function Dashboard() {
   const activeFilters = [status, priority, type, siteId, assignedUserId, search, dateFrom, dateTo, ...Object.values(customFieldFilters)].filter(Boolean).length
 
   const siteMap = React.useMemo(() => Object.fromEntries(sites.map(s => [s.id, s])), [sites])
+  const userMap = React.useMemo(() => Object.fromEntries(users.map(u => [u.id, u])), [users])
 
   const sortedTickets = React.useMemo(() => {
     if (!sortColumn) return sortTickets(tickets, userId || undefined, cfg)
@@ -362,12 +362,41 @@ export default function Dashboard() {
   const stats = React.useMemo(() => {
     const byStatus: Record<string, number> = {}
     const byPriority: Record<string, number> = {}
+    const byUser: Record<string, number> = {}
     sortedTickets.forEach(t => {
       byStatus[t.status] = (byStatus[t.status] || 0) + 1
       byPriority[t.priority] = (byPriority[t.priority] || 0) + 1
+      const key = t.assignedUserId || 'unassigned'
+      byUser[key] = (byUser[key] || 0) + 1
     })
-    return { byStatus, byPriority, total: sortedTickets.length }
+    return { byStatus, byPriority, byUser, total: sortedTickets.length }
   }, [sortedTickets])
+
+  const statusPalette: Record<string, string> = React.useMemo(() => ({
+    AWAITING_RESPONSE: '#5B8DEF',
+    ADE_TO_RESPOND: '#6C5CE7',
+    ON_HOLD: '#F39C12',
+    CLOSED: '#2ECC71'
+  }), [])
+
+  const priorityPalette: Record<Ticket['priority'], string> = {
+    P1: '#E74C3C',
+    P2: '#E67E22',
+    P3: '#F1C40F',
+    P4: '#16A085'
+  }
+
+  const userBreakdown = React.useMemo(() => {
+    return Object.entries(stats.byUser)
+      .sort(([, aCount], [, bCount]) => bCount - aCount)
+      .map(([userId, count]) => ({
+        userId,
+        count,
+        label: userId === 'unassigned'
+          ? 'Unassigned'
+          : (userMap[userId]?.name || userMap[userId]?.email || userId)
+      }))
+  }, [stats.byUser, userMap])
 
   // Phase 1 & 2 Feature Handlers
   const handleToggleSelect = (ticketId: string) => {
@@ -818,27 +847,150 @@ export default function Dashboard() {
       </div>
 
       <div className="panel">
-        <div className="h1" style={{marginBottom:8}}>Statistics</div>
-        <div style={{marginBottom: 16}}>
-          <div style={{fontSize: 14, marginBottom: 8}}>By Status:</div>
-          {Object.entries(stats.byStatus).map(([s, count]) => (
-            <div key={s} className="row" style={{marginBottom: 4, fontSize: 12}}>
-              <span style={{width: 120}}>{s}:</span>
-              <span>{count}</span>
+        <div className="h1" style={{ marginBottom: 12 }}>Statistics</div>
+        <div
+          style={{
+            display: 'grid',
+            gap: 16,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))'
+          }}
+        >
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(91, 141, 239, 0.35), rgba(91, 141, 239, 0.1))',
+              border: '1px solid rgba(91, 141, 239, 0.45)',
+              borderRadius: 12,
+              padding: 16,
+              color: '#fff',
+              boxShadow: '0 6px 18px rgba(17, 25, 40, 0.2)'
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, letterSpacing: 0.3 }}>
+              Status Breakdown
             </div>
-          ))}
-        </div>
-        <div style={{marginBottom: 16}}>
-          <div style={{fontSize: 14, marginBottom: 8}}>By Priority:</div>
-          {Object.entries(stats.byPriority).map(([p, count]) => (
-            <div key={p} className="row" style={{marginBottom: 4, fontSize: 12}}>
-              <span style={{width: 60}}>{p}:</span>
-              <span>{count}</span>
+            {Object.entries(stats.byStatus).length === 0 && (
+              <div style={{ fontSize: 12, opacity: 0.75 }}>No tickets yet.</div>
+            )}
+            {Object.entries(stats.byStatus).map(([statusKey, count]) => {
+              const percent = stats.total ? Math.round((count / stats.total) * 100) : 0
+              const label = STATUS_LABELS[statusKey as keyof typeof STATUS_LABELS] || statusKey
+              const barColor = statusPalette[statusKey] || 'rgba(255,255,255,0.4)'
+              return (
+                <div key={statusKey} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                    <span style={{ opacity: 0.9 }}>{label}</span>
+                    <span style={{ opacity: 0.7 }}>{count} · {percent}%</span>
+                  </div>
+                  <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
+                    <div
+                      style={{
+                        width: `${Math.max(percent, 5)}%`,
+                        maxWidth: '100%',
+                        background: barColor,
+                        height: '100%',
+                        borderRadius: 6,
+                        transition: 'width 0.3s ease'
+                      }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(108, 92, 231, 0.35), rgba(108, 92, 231, 0.1))',
+              border: '1px solid rgba(108, 92, 231, 0.45)',
+              borderRadius: 12,
+              padding: 16,
+              color: '#fff',
+              boxShadow: '0 6px 18px rgba(17, 25, 40, 0.2)'
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, letterSpacing: 0.3 }}>
+              Priority Snapshot
             </div>
-          ))}
+            {Object.entries(stats.byPriority).length === 0 && (
+              <div style={{ fontSize: 12, opacity: 0.75 }}>No tickets yet.</div>
+            )}
+            {Object.entries(stats.byPriority)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([priorityKey, count]) => {
+                const percent = stats.total ? Math.round((count / stats.total) * 100) : 0
+                const barColor = priorityPalette[priorityKey as Ticket['priority']] || 'rgba(255,255,255,0.35)'
+                return (
+                  <div key={priorityKey} style={{ marginBottom: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                      <span style={{ opacity: 0.9 }}>Priority {priorityKey}</span>
+                      <span style={{ opacity: 0.7 }}>{count} · {percent}%</span>
+                    </div>
+                    <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
+                      <div
+                        style={{
+                          width: `${Math.max(percent, 5)}%`,
+                          maxWidth: '100%',
+                          background: barColor,
+                          height: '100%',
+                          borderRadius: 6,
+                          transition: 'width 0.3s ease'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(22, 160, 133, 0.35), rgba(22, 160, 133, 0.1))',
+              border: '1px solid rgba(22, 160, 133, 0.4)',
+              borderRadius: 12,
+              padding: 16,
+              color: '#fff',
+              boxShadow: '0 6px 18px rgba(17, 25, 40, 0.2)'
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, letterSpacing: 0.3 }}>
+              Tickets by Assignee
+            </div>
+            {userBreakdown.length === 0 && (
+              <div style={{ fontSize: 12, opacity: 0.75 }}>No assignments yet.</div>
+            )}
+            {userBreakdown.slice(0, 6).map((entry, index) => {
+              const percent = stats.total ? Math.round((entry.count / stats.total) * 100) : 0
+              const accent = ['#1ABC9C', '#48C9B0', '#76D7C4', '#A3E4D7', '#D0ECE7', '#E8F8F5'][index] || 'rgba(255,255,255,0.35)'
+              return (
+                <div key={entry.userId} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                    <span style={{ opacity: 0.9 }}>{entry.label}</span>
+                    <span style={{ opacity: 0.7 }}>{entry.count} · {percent}%</span>
+                  </div>
+                  <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
+                    <div
+                      style={{
+                        width: `${Math.max(percent, 5)}%`,
+                        maxWidth: '100%',
+                        background: accent,
+                        height: '100%',
+                        borderRadius: 6,
+                        transition: 'width 0.3s ease'
+                      }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+            {userBreakdown.length > 6 && (
+              <div style={{ fontSize: 11, opacity: 0.65, marginTop: 6 }}>
+                Showing top 6 assignees of {userBreakdown.length}
+              </div>
+            )}
+          </div>
         </div>
-        <div style={{fontSize: 12, color: '#999', marginTop: 16}}>
-          Total: {stats.total} tickets
+        <div style={{ fontSize: 12, color: '#999', marginTop: 16 }}>
+          Total: {stats.total} ticket{stats.total === 1 ? '' : 's'}
         </div>
       </div>
       {/* My prioritisation section disabled per user request */}
