@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../infra/prisma.service';
 import { Prisma, TicketStatus, TicketPriority } from '@prisma/client';
+import { allocateTicketId } from './ticket-id.util';
 
 type CFDefs = Record<string, {
   datatype: 'string' | 'number' | 'boolean' | 'date' | 'enum';
@@ -88,8 +89,11 @@ export class TicketsService {
         dueAt = parsed;
       }
 
+      const { id: ticketId } = await allocateTicketId(tx, tenantId, { id: site.id, name: site.name });
+
       const t = await tx.ticket.create({
         data: {
+          id: ticketId,
           tenantId, siteId: dto.siteId, typeKey: dto.type, description: dto.description,
           status: dto.status, priority: dto.priority, details: dto.details ?? null,
           assignedUserId: dto.assignedUserId ?? null,

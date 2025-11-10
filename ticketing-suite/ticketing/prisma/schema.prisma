@@ -22,12 +22,13 @@ model Tenant {
 }
 
 model Site {
-  id       String @id @default(uuid())
-  tenantId String
-  name     String
-  location String?
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tickets  Ticket[]
+  id              String               @id @default(uuid())
+  tenantId        String
+  name            String
+  location        String?
+  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tickets         Ticket[]
+  ticketSequence  SiteTicketSequence?
 
   @@index([tenantId, name])
 }
@@ -44,7 +45,7 @@ model User {
 }
 
 model Ticket {
-  id              String   @id @default(uuid())
+  id              String   @id
   tenantId        String
   siteId          String
   typeKey         String
@@ -71,6 +72,16 @@ model Ticket {
   @@index([tenantId, siteId, createdAt])
   @@index([tenantId, typeKey, createdAt])
   @@index([tenantId, assignedUserId])
+}
+
+model SiteTicketSequence {
+  siteId    String   @id
+  tenantId  String
+  prefix    String
+  nextValue Int      @default(1)
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model TicketFieldDef {

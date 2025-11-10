@@ -101,8 +101,7 @@ const TicketRow: React.FC<{
           }}
           onClick={onQuickView}
         >
-          {ticket.id.slice(0, 8)}
-          {ticket.id.length > 8 ? '…' : ''}
+          {ticket.id}
         </span>
       </td>
       <td>

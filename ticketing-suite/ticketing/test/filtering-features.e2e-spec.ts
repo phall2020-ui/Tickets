@@ -3,6 +3,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/infra/prisma.service';
+import { Prisma } from '@prisma/client';
+import { allocateTicketId } from '../src/tickets/ticket-id.util';
 
 describe('New Filtering Features E2E Tests', () => {
   let app: INestApplication;
@@ -130,6 +132,25 @@ describe('New Filtering Features E2E Tests', () => {
     return base64url(header) + '.' + base64url(payload) + '.dev-signature';
   }
 
+  async function createTicket(
+    data: Prisma.TicketUncheckedCreateInput
+  ): Promise<string> {
+    const ticket = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const site = await tx.site.findUnique({ where: { id: data.siteId } });
+      if (!site) {
+        throw new Error(`Site ${data.siteId} not found for ticket creation`);
+      }
+      const { id } = await allocateTicketId(tx, data.tenantId, { id: site.id, name: site.name });
+      return tx.ticket.create({
+        data: {
+          ...data,
+          id,
+        },
+      });
+    });
+    return ticket.id;
+  }
+
   describe('Date Range Filtering', () => {
     beforeAll(async () => {
       // Create tickets with different creation dates
@@ -139,28 +160,24 @@ describe('New Filtering Features E2E Tests', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      testTicketId1 = await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket created yesterday',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-          createdAt: yesterday,
-        },
-      }).then(t => t.id);
+      testTicketId1 = await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket created yesterday',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+        createdAt: yesterday,
+      });
 
-      testTicketId2 = await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket created today',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-        },
-      }).then(t => t.id);
+      testTicketId2 = await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket created today',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+      });
     });
 
     it('GET /tickets?createdFrom - should filter tickets by created date from', async () => {
@@ -210,40 +227,34 @@ describe('New Filtering Features E2E Tests', () => {
   describe('Assigned User Filtering', () => {
     beforeAll(async () => {
       // Create tickets with different assigned users
-      await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket assigned to user 1',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-          assignedUserId: testUserId,
-        },
+      await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket assigned to user 1',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+        assignedUserId: testUserId,
       });
 
-      await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket assigned to user 2',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-          assignedUserId: testUserId2,
-        },
+      await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket assigned to user 2',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+        assignedUserId: testUserId2,
       });
 
-      await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Unassigned ticket',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-          assignedUserId: null,
-        },
+      await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Unassigned ticket',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+        assignedUserId: null,
       });
     });
 
@@ -287,40 +298,34 @@ describe('New Filtering Features E2E Tests', () => {
   describe('Custom Field Filtering', () => {
     beforeAll(async () => {
       // Create tickets with custom fields
-      await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket with custom field value A',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-          customFields: { test_custom_field: 'value_a' },
-        },
+      await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket with custom field value A',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+        customFields: { test_custom_field: 'value_a' },
       });
 
-      await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket with custom field value B',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-          customFields: { test_custom_field: 'value_b' },
-        },
+      await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket with custom field value B',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+        customFields: { test_custom_field: 'value_b' },
       });
 
-      await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket without custom field',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-          customFields: {},
-        },
+      await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket without custom field',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+        customFields: {},
       });
     });
 
@@ -372,16 +377,14 @@ describe('New Filtering Features E2E Tests', () => {
 
     beforeAll(async () => {
       // Create a ticket for attachment testing
-      testTicketForAttachments = await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket for attachment listing test',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-        },
-      }).then(t => t.id);
+      testTicketForAttachments = await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket for attachment listing test',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
+      });
 
       // Create test attachments
       await prisma.attachment.create({
@@ -432,19 +435,17 @@ describe('New Filtering Features E2E Tests', () => {
     });
 
     it('GET /tickets/:ticketId/attachments - should return empty array for ticket without attachments', async () => {
-      const ticketWithoutAttachments = await prisma.ticket.create({
-        data: {
-          tenantId: testTenantId,
-          siteId: testSiteId,
-          typeKey: 'FILTER_TEST',
-          description: 'Ticket without attachments',
-          status: 'AWAITING_RESPONSE',
-          priority: 'P2',
-        },
+      const ticketWithoutAttachmentsId = await createTicket({
+        tenantId: testTenantId,
+        siteId: testSiteId,
+        typeKey: 'FILTER_TEST',
+        description: 'Ticket without attachments',
+        status: 'AWAITING_RESPONSE',
+        priority: 'P2',
       });
 
       const response = await request(app.getHttpServer())
-        .get(`/tickets/${ticketWithoutAttachments.id}/attachments`)
+        .get(`/tickets/${ticketWithoutAttachmentsId}/attachments`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
