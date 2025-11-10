@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../infra/prisma.service';
-import { Prisma, TicketStatus, TicketPriority } from '@prisma/client';
+import { Prisma, TicketPriority } from '@prisma/client';
 import { allocateTicketId } from './ticket-id.util';
 
 type CFDefs = Record<string, {
@@ -11,7 +11,7 @@ type CFDefs = Record<string, {
 }>;
 
 function buildChanges(before: any | null, after: any) {
-  const fields = ['status', 'details', 'priority', 'assignedUserId', 'typeKey', 'siteId', 'dueAt'];
+  const fields = ['statusKey', 'details', 'priority', 'assignedUserId', 'typeKey', 'siteId', 'dueAt'];
   const changes: Record<string, { from: any; to: any }> = {};
   for (const k of fields) {
     const fromVal = before ? before[k] : undefined;
@@ -61,7 +61,7 @@ export class TicketsService {
 
   async create(tenantId: string, dto: {
     siteId: string; type: string; description: string;
-    status: TicketStatus; priority: TicketPriority; details?: string; assignedUserId?: string;
+    status: string; priority: TicketPriority; details?: string; assignedUserId?: string;
     custom_fields?: Record<string, unknown>; dueAt?: string | null;
   }) {
     return this.prisma.withTenant(tenantId, async (tx) => {
@@ -95,7 +95,7 @@ export class TicketsService {
         data: {
           id: ticketId,
           tenantId, siteId: dto.siteId, typeKey: dto.type, description: dto.description,
-          status: dto.status, priority: dto.priority, details: dto.details ?? null,
+          statusKey: dto.status, priority: dto.priority, details: dto.details ?? null,
           assignedUserId: dto.assignedUserId ?? null,
           dueAt,
           customFields: dto.custom_fields ?? {} as any,
@@ -118,14 +118,14 @@ export class TicketsService {
   }
 
   async list(tenantId: string, q: {
-    siteId?: string; status?: TicketStatus; priority?: TicketPriority; type?: string;
+    siteId?: string; status?: string; priority?: TicketPriority; type?: string;
     search?: string; cf_key?: string; cf_val?: string; assignedUserId?: string;
     createdFrom?: string; createdTo?: string; limit?: number; cursor?: string;
   }) {
     return this.prisma.withTenant(tenantId, async (tx) => {
       const where: Prisma.TicketWhereInput = { tenantId };
       if (q.siteId) where.siteId = q.siteId;
-      if (q.status) where.status = q.status;
+      if (q.status) where.statusKey = q.status;
       if (q.priority) where.priority = q.priority;
       if (q.type) where.typeKey = q.type;
       if (q.assignedUserId) where.assignedUserId = q.assignedUserId;
@@ -171,7 +171,7 @@ export class TicketsService {
     id: string,
     patch: Partial<{
       siteId: string; type: string; description: string;
-      status: TicketStatus; priority: TicketPriority; details?: string; assignedUserId?: string | null;
+      status: string; priority: TicketPriority; details?: string; assignedUserId?: string | null;
       dueAt?: string | null;
       custom_fields: Record<string, unknown>;
     }>
@@ -205,7 +205,7 @@ export class TicketsService {
     if (patch.siteId) updateData.siteId = patch.siteId;
     if (patch.type) updateData.typeKey = patch.type;
     if (patch.description) updateData.description = patch.description;
-    if (patch.status) updateData.status = patch.status;
+    if (patch.status) updateData.statusKey = patch.status;
     if (patch.priority) updateData.priority = patch.priority;
     if (patch.details !== undefined) updateData.details = patch.details;
     if (patch.assignedUserId !== undefined) updateData.assignedUserId = patch.assignedUserId || null;
@@ -241,7 +241,7 @@ export class TicketsService {
 
   async update(tenantId: string, id: string, patch: Partial<{
     siteId: string; type: string; description: string;
-    status: TicketStatus; priority: TicketPriority; details?: string; assignedUserId?: string | null;
+    status: string; priority: TicketPriority; details?: string; assignedUserId?: string | null;
     dueAt?: string | null;
     custom_fields: Record<string, unknown>;
   }>) {
@@ -252,7 +252,7 @@ export class TicketsService {
 
   async bulkUpdate(tenantId: string, ids: string[], patch: Partial<{
     siteId: string; type: string; description: string;
-    status: TicketStatus; priority: TicketPriority; details?: string; assignedUserId?: string | null;
+    status: string; priority: TicketPriority; details?: string; assignedUserId?: string | null;
     dueAt?: string | null;
     custom_fields: Record<string, unknown>;
   }>) {

@@ -18,6 +18,7 @@ model Tenant {
   attachments Attachment[]
   outboxEntries Outbox[]
   types     IssueType[]
+  statuses  Status[]
   ticketHistory TicketHistory[]
 }
 
@@ -50,7 +51,7 @@ model Ticket {
   siteId          String
   typeKey         String
   description     String
-  status          TicketStatus
+  statusKey       String
   priority        TicketPriority
   details         String?
   assignedUserId  String?
@@ -68,7 +69,7 @@ model Ticket {
   outboxEntries   Outbox[]
   history         TicketHistory[]
 
-  @@index([tenantId, status, priority, createdAt])
+  @@index([tenantId, statusKey, priority, createdAt])
   @@index([tenantId, siteId, createdAt])
   @@index([tenantId, typeKey, createdAt])
   @@index([tenantId, assignedUserId])
@@ -111,11 +112,15 @@ model IssueType {
   @@unique([tenantId, key])
 }
 
-enum TicketStatus {
-  AWAITING_RESPONSE
-  ADE_TO_RESPOND
-  CLOSED
-  ON_HOLD
+model Status {
+  id        String  @id @default(uuid())
+  tenantId  String
+  key       String
+  label     String
+  active    Boolean @default(true)
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, key])
 }
 
 enum TicketPriority {

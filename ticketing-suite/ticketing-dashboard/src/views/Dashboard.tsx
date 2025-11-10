@@ -15,7 +15,7 @@ import { useNotifications } from '../lib/notifications'
 import { exportToCSV, exportToJSON } from '../lib/export'
 import { useKeyboardShortcuts, SHORTCUT_CATEGORIES, type KeyboardShortcut } from '../hooks/useKeyboardShortcuts'
 import { useSavedViews, type SavedView } from '../hooks/useSavedViews'
-import { STATUS_OPTIONS, STATUS_LABELS } from '../lib/statuses'
+import { loadStatusOptions, getStatusOptions, getStatusLabel } from '../lib/statuses'
 
 const CONTROL_HEIGHT = 36
 
@@ -76,32 +76,35 @@ const segmentButtonActiveStyle: React.CSSProperties = {
   boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)'
 }
 
-const StatusFilter: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
-  <div style={segmentContainerStyle} role="group" aria-label="Filter by status">
-    <button
-      type="button"
-      onClick={() => onChange('')}
-      style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}) }}
-      aria-pressed={value === ''}
-    >
-      All
-    </button>
-    {STATUS_OPTIONS.map(option => {
-      const isActive = value === option.value
-      return (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
-          aria-pressed={isActive}
-        >
-          {option.label}
-        </button>
-      )
-    })}
-  </div>
-)
+const StatusFilter: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
+  const statusOptions = getStatusOptions()
+  return (
+    <div style={segmentContainerStyle} role="group" aria-label="Filter by status">
+      <button
+        type="button"
+        onClick={() => onChange('')}
+        style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}) }}
+        aria-pressed={value === ''}
+      >
+        All
+      </button>
+      {statusOptions.map(option => {
+        const isActive = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
+            aria-pressed={isActive}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 // User avatar component
 const UserAvatar: React.FC<{ user?: UserOpt; size?: number; showMargin?: boolean }> = ({ user, size = 24, showMargin = true }) => {
@@ -271,7 +274,7 @@ export default function Dashboard() {
   
   // Load dropdown data
   React.useEffect(() => {
-    Promise.all([listSites(), listUsers(), listIssueTypes(), listFieldDefinitions()]).then(([s, u, t, f]) => {
+    Promise.all([listSites(), listUsers(), listIssueTypes(), listFieldDefinitions(), loadStatusOptions()]).then(([s, u, t, f]) => {
       setSites(s); setUsers(u); setTypes(t); setFieldDefs(f)
     }).catch(e => console.error('Failed to load filters', e))
   }, [])

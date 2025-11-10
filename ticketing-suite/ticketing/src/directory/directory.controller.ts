@@ -108,6 +108,50 @@ export class DirectoryController {
     });
   }
 
+  @Get('statuses')
+  @Roles('ADMIN', 'USER')
+  statuses(@Req() req: any) {
+    return this.prisma.status.findMany({
+      where: { tenantId: this.tenant(req), active: true },
+      select: { key: true, label: true }
+    });
+  }
+
+  @Post('statuses')
+  @Roles('ADMIN')
+  async createStatus(@Req() req: any, @Body() dto: { key: string; label: string }) {
+    return this.prisma.status.create({
+      data: {
+        tenantId: this.tenant(req),
+        key: dto.key,
+        label: dto.label,
+        active: true
+      }
+    });
+  }
+
+  @Patch('statuses/:id')
+  @Roles('ADMIN')
+  async updateStatus(@Req() req: any, @Param('id') id: string, @Body() dto: { key?: string; label?: string; active?: boolean }) {
+    return this.prisma.status.update({
+      where: { id },
+      data: {
+        ...(dto.key !== undefined && { key: dto.key }),
+        ...(dto.label !== undefined && { label: dto.label }),
+        ...(dto.active !== undefined && { active: dto.active })
+      }
+    });
+  }
+
+  @Delete('statuses/:id')
+  @Roles('ADMIN')
+  async deleteStatus(@Req() req: any, @Param('id') id: string) {
+    return this.prisma.status.update({
+      where: { id, tenantId: this.tenant(req) },
+      data: { active: false }
+    });
+  }
+
   @Get('field-definitions')
   @Roles('ADMIN', 'USER')
   fieldDefinitions(@Req() req: any) {

@@ -1,21 +1,24 @@
 import React from 'react'
 import { Chip, ChipProps } from '@mui/material'
-import { STATUS_LABELS, type TicketStatusValue } from '../../lib/statuses'
+import { getStatusLabel } from '../../lib/statuses'
 
 interface StatusChipProps extends Omit<ChipProps, 'color'> {
-  status: TicketStatusValue
+  status: string
 }
 
-const statusColors: Record<TicketStatusValue, ChipProps['color']> = {
-  AWAITING_RESPONSE: 'info',
-  ADE_TO_RESPOND: 'primary',
-  ON_HOLD: 'warning',
-  CLOSED: 'default',
+const getStatusColor = (status: string): ChipProps['color'] => {
+  // Default colors for common statuses
+  const upperStatus = status.toUpperCase()
+  if (upperStatus.includes('AWAIT') || upperStatus === 'NEW') return 'info'
+  if (upperStatus.includes('PROGRESS') || upperStatus.includes('RESPOND')) return 'primary'
+  if (upperStatus.includes('HOLD') || upperStatus.includes('PENDING')) return 'warning'
+  if (upperStatus.includes('CLOSE') || upperStatus.includes('DONE')) return 'default'
+  return 'default'
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({ status, ...props }) => {
-  const label = STATUS_LABELS[status]
-  const color = statusColors[status]
+  const label = getStatusLabel(status)
+  const color = getStatusColor(status)
   
   return (
     <Chip

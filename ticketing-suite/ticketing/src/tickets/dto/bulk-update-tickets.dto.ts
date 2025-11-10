@@ -1,5 +1,5 @@
 import { ArrayNotEmpty, IsArray, IsEnum, IsISO8601, IsOptional, IsString, IsUUID, ValidateIf } from 'class-validator';
-import { TicketPriority, TicketStatus } from '@prisma/client';
+import { TicketPriority } from '@prisma/client';
 
 export class BulkUpdateTicketsDto {
   @IsArray()
@@ -8,8 +8,8 @@ export class BulkUpdateTicketsDto {
   ids!: string[];
 
   @IsOptional()
-  @IsEnum(TicketStatus)
-  status?: TicketStatus;
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @IsEnum(TicketPriority)

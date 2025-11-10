@@ -1,8 +1,8 @@
-import { IsEnum, IsOptional, IsUUID, IsString, IsDateString } from 'class-validator';
-import { TicketStatus, TicketPriority } from '@prisma/client';
+import { IsOptional, IsUUID, IsString, IsDateString } from 'class-validator';
+import { TicketPriority } from '@prisma/client';
 export class QueryTicketDto {
   @IsOptional() @IsUUID() siteId?: string;
-  @IsOptional() @IsEnum(TicketStatus) status?: TicketStatus;
+  @IsOptional() @IsString() status?: string;
   @IsOptional() @IsEnum(TicketPriority) priority?: TicketPriority;
   @IsOptional() @IsString() type?: string;
   @IsOptional() @IsString() search?: string;

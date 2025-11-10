@@ -15,7 +15,7 @@ import { Modal } from './common'
 import { useSites, useUsers, useIssueTypes, useFieldDefinitions } from '../hooks/useDirectory'
 import { useCreateTicket } from '../hooks/useTickets'
 import CustomFieldsForm from './CustomFieldsForm'
-import { STATUS_OPTIONS, type TicketStatusValue } from '../lib/statuses'
+import { getStatusOptions } from '../lib/statuses'
 import { filterFieldDefs, sanitizeCustomFieldValues } from '../lib/customFields'
 
 interface CreateTicketProps {
@@ -31,13 +31,14 @@ export default function CreateTicket({ onClose, onSuccess }: CreateTicketProps) 
   const { data: fieldDefs = [] } = useFieldDefinitions()
   const createTicketMutation = useCreateTicket()
   const filteredFieldDefs = React.useMemo(() => filterFieldDefs(fieldDefs), [fieldDefs])
+  const statusOptions = getStatusOptions()
   
   const [formData, setFormData] = React.useState({
     siteId: '',
     type: '',
     description: '',
     details: '',
-    status: (STATUS_OPTIONS[0]?.value ?? 'AWAITING_RESPONSE') as TicketStatusValue,
+    status: (statusOptions[0]?.value ?? 'AWAITING_RESPONSE'),
     priority: 'P3' as const,
     assignedUserId: '',
     custom_fields: {} as Record<string, any>
@@ -172,7 +173,7 @@ export default function CreateTicket({ onClose, onSuccess }: CreateTicketProps) 
                 label="Status"
                 aria-label="Status"
               >
-                {STATUS_OPTIONS.map(option => (
+                {statusOptions.map(option => (
                   <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                 ))}
               </Select>

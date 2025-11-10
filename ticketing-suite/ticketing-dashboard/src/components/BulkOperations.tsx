@@ -25,7 +25,7 @@ import {
   DeleteForever as DeleteIcon
 } from '@mui/icons-material'
 import { Ticket } from '../lib/api'
-import { STATUS_OPTIONS } from '../lib/statuses'
+import { getStatusOptions } from '../lib/statuses'
 
 interface BulkOperationsProps {
   selectedTickets: Ticket[]
@@ -48,6 +48,8 @@ export default function BulkOperations({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogType, setDialogType] = useState<'status' | 'priority' | 'assign' | 'delete' | null>(null)
   const [selectedValue, setSelectedValue] = useState('')
+  const statusOptions = getStatusOptions()
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -242,7 +244,7 @@ export default function BulkOperations({
                   >
                     {dialogType === 'status' && (
                       <>
-                        {STATUS_OPTIONS.map(option => (
+                        {statusOptions.map(option => (
                           <MenuItem key={option.value} value={option.value}>
                             {option.label}
                           </MenuItem>

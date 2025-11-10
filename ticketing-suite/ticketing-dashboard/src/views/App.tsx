@@ -1,15 +1,17 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import React from 'react'
-import { AppBar, Toolbar, Typography, Button, Box, Container, Tooltip } from '@mui/material'
+import { AppBar, Toolbar, Typography, Button, Box, Container, Tooltip, Menu, MenuItem } from '@mui/material'
 import {
   ConfirmationNumber as TicketIcon,
   Add as AddIcon,
   Person as PersonIcon,
   People as PeopleIcon,
   LocationOn as LocationIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material'
 import UserRegistration from '../components/UserRegistration'
 import IssueTypeManagement from '../components/IssueTypeManagement'
+import StatusManagement from '../components/StatusManagement'
 import FieldDefinitionManagement from '../components/FieldDefinitionManagement'
 import { useNotifications } from '../lib/notifications'
 
@@ -19,8 +21,10 @@ export default function App() {
   const { showNotification } = useNotifications()
   const [showUserReg, setShowUserReg] = React.useState(false)
   const [showIssueTypes, setShowIssueTypes] = React.useState(false)
+  const [showStatuses, setShowStatuses] = React.useState(false)
   const [showFieldDefs, setShowFieldDefs] = React.useState(false)
   const [userRole, setUserRole] = React.useState<'ADMIN' | 'USER' | null>(null)
+  const [adminMenuAnchor, setAdminMenuAnchor] = React.useState<null | HTMLElement>(null)
   
   React.useEffect(() => {
     // Try to decode JWT to get user role
@@ -86,17 +90,47 @@ export default function App() {
           </Tooltip>
           
           {userRole === 'ADMIN' && (
-            <Tooltip title="Manage Users">
-              <Button
-                onClick={() => setShowUserReg(true)}
-                startIcon={<PeopleIcon />}
-                size="small"
-                sx={{ display: { xs: 'none', md: 'flex' } }}
-                aria-label="Manage users"
+            <>
+              <Tooltip title="Manage Users">
+                <Button
+                  onClick={() => setShowUserReg(true)}
+                  startIcon={<PeopleIcon />}
+                  size="small"
+                  sx={{ display: { xs: 'none', md: 'flex' } }}
+                  aria-label="Manage users"
+                >
+                  Users
+                </Button>
+              </Tooltip>
+              
+              <Tooltip title="Admin Settings">
+                <Button
+                  onClick={(e) => setAdminMenuAnchor(e.currentTarget)}
+                  startIcon={<SettingsIcon />}
+                  size="small"
+                  sx={{ display: { xs: 'none', md: 'flex' } }}
+                  aria-label="Admin settings"
+                >
+                  Admin
+                </Button>
+              </Tooltip>
+              
+              <Menu
+                anchorEl={adminMenuAnchor}
+                open={Boolean(adminMenuAnchor)}
+                onClose={() => setAdminMenuAnchor(null)}
               >
-                Users
-              </Button>
-            </Tooltip>
+                <MenuItem onClick={() => { setShowIssueTypes(true); setAdminMenuAnchor(null); }}>
+                  Issue Types
+                </MenuItem>
+                <MenuItem onClick={() => { setShowStatuses(true); setAdminMenuAnchor(null); }}>
+                  Statuses
+                </MenuItem>
+                <MenuItem onClick={() => { setShowFieldDefs(true); setAdminMenuAnchor(null); }}>
+                  Field Definitions
+                </MenuItem>
+              </Menu>
+            </>
           )}
           
           <Tooltip title="Manage Sites">
@@ -148,6 +182,15 @@ export default function App() {
           onClose={() => setShowIssueTypes(false)}
           onSuccess={() => {
             showNotification('success', 'Issue types updated')
+          }}
+        />
+      )}
+      
+      {showStatuses && (
+        <StatusManagement
+          onClose={() => setShowStatuses(false)}
+          onSuccess={() => {
+            showNotification('success', 'Statuses updated')
           }}
         />
       )}

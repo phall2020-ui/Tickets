@@ -6,7 +6,7 @@ import Comments from '../components/Comments'
 import Attachments from '../components/Attachments'
 import CustomFieldsForm from '../components/CustomFieldsForm'
 import { useNotifications } from '../lib/notifications'
-import { STATUS_OPTIONS } from '../lib/statuses'
+import { getStatusOptions } from '../lib/statuses'
 import { filterFieldDefs, sanitizeCustomFieldValues } from '../lib/customFields'
 
 // User avatar component
@@ -129,7 +129,7 @@ export default function TicketView() {
         <div className="row" style={{marginTop:12}}>
           <label style={{width:150}}>Status</label>
           <select value={t.status} onChange={e=>setT({...t, status:e.target.value})}>
-            {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            {getStatusOptions().map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <label style={{width:100}}>Priority</label>
           <select value={t.priority} onChange={e=>setT({...t, priority:e.target.value})}>

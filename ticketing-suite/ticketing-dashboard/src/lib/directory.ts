@@ -10,6 +10,7 @@ client.interceptors.request.use(cfg => {
 export type SiteOpt = { id: string; name: string }
 export type UserOpt = { id: string; name: string; email: string; role: 'ADMIN' | 'USER' }
 export type IssueTypeOpt = { key: string; label: string }
+export type StatusOpt = { key: string; label: string }
 export type FieldDefOpt = {
   key: string
   label: string
@@ -24,6 +25,7 @@ export type FieldDefOpt = {
 export const listSites = async () => (await client.get<SiteOpt[]>('/directory/sites')).data
 export const listUsers = async () => (await client.get<UserOpt[]>('/directory/users')).data
 export const listIssueTypes = async () => (await client.get<IssueTypeOpt[]>('/directory/issue-types')).data
+export const listStatuses = async () => (await client.get<StatusOpt[]>('/directory/statuses')).data
 export const listFieldDefinitions = async () => (await client.get<FieldDefOpt[]>('/directory/field-definitions')).data
 
 // User management
@@ -41,6 +43,14 @@ export const updateIssueType = async (id: string, data: { key?: string; label?: 
   (await client.patch(`/directory/issue-types/${id}`, data)).data
 export const deleteIssueType = async (id: string) =>
   (await client.delete(`/directory/issue-types/${id}`)).data
+
+// Status management
+export const createStatus = async (data: { key: string; label: string }) =>
+  (await client.post('/directory/statuses', data)).data
+export const updateStatus = async (id: string, data: { key?: string; label?: string; active?: boolean }) =>
+  (await client.patch(`/directory/statuses/${id}`, data)).data
+export const deleteStatus = async (id: string) =>
+  (await client.delete(`/directory/statuses/${id}`)).data
 
 // Field definition management
 export const createFieldDefinition = async (data: {
