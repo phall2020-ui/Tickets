@@ -8,10 +8,12 @@ import { AttachmentsModule } from './attachments/attachments.module';
 import { HealthModule } from './health/health.module';
 import { DirectoryModule } from './directory/directory.module';
 import { FeaturesModule } from './features/features.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ ttl: 60, limit: 120 }]),
+    EmailModule,
     AuthModule,
     TicketsModule,
     CommentsModule,
