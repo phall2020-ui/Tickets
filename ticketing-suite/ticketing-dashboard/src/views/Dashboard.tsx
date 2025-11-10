@@ -1072,7 +1072,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             )}
             {Object.entries(stats.byStatus).map(([statusKey, count]) => {
               const percent = stats.total ? Math.round((count / stats.total) * 100) : 0
-              const label = STATUS_LABELS[statusKey as keyof typeof STATUS_LABELS] || statusKey
+              const label = getStatusLabel(statusKey)
               const barColor = statusPalette[statusKey] || 'rgba(255,255,255,0.4)'
               return (
                 <div key={statusKey} style={{ marginBottom: 10 }}>

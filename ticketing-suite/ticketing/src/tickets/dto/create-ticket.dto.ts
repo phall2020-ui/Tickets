@@ -1,4 +1,4 @@
-import { IsUUID, IsString, IsOptional, IsObject, IsISO8601 } from 'class-validator';
+import { IsUUID, IsString, IsEnum, IsOptional, IsObject, IsISO8601 } from 'class-validator';
 import { TicketPriority } from '@prisma/client';
 export class CreateTicketDto {
   @IsUUID() siteId!: string;
