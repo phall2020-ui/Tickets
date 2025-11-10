@@ -79,8 +79,21 @@ const TicketRow: React.FC<{
     }
   }
 
-  const isOverdue = ticket.dueAt && new Date(ticket.dueAt) < new Date()
-  const isDueSoon = ticket.dueAt && !isOverdue && (new Date(ticket.dueAt).getTime() - Date.now()) < 24 * 60 * 60 * 1000
+  // RAG color coding for due dates
+  const getDueDateColor = () => {
+    if (!ticket.dueAt) return undefined
+    const dueDate = new Date(ticket.dueAt)
+    const now = new Date()
+    const diffMs = dueDate.getTime() - now.getTime()
+    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+    
+    // Red: due in the past or in the next week (7 days)
+    if (diffDays < 7) return '#e74c3c'
+    // Amber: due in the next month (30 days)
+    if (diffDays < 30) return '#f39c12'
+    // Green: due beyond 1 month
+    return '#27ae60'
+  }
   
   return (
     <tr style={{ backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.08)' : undefined }}>
@@ -108,19 +121,6 @@ const TicketRow: React.FC<{
       <td>
         <div className="linkish"><Link to={`/tickets/${ticket.id}`}>{ticket.description}</Link></div>
         <div className="status">{ticket.details || ''}</div>
-        {ticket.dueAt && (
-          <div style={{ marginTop: 4, fontSize: 11 }}>
-            <span style={{
-              padding: '2px 6px',
-              borderRadius: 4,
-              background: isOverdue ? '#e74c3c' : isDueSoon ? '#f1c40f' : '#2ecc71',
-              color: '#000',
-              fontWeight: 600
-            }}>
-              Due: {new Date(ticket.dueAt).toLocaleDateString()}
-            </span>
-          </div>
-        )}
       </td>
       <td>
         <select 
@@ -151,16 +151,21 @@ const TicketRow: React.FC<{
       </td>
       <td>{sites.find(s => s.id === ticket.siteId)?.name || '—'}</td>
       <td>
-        {onQuickView && (
-          <button 
-            onClick={onQuickView} 
-            style={{ marginRight: 8, fontSize: 11, padding: '2px 6px' }}
-            aria-label={`Quick view ticket ${ticket.id}`}
-          >
-            👁️ View
-          </button>
+        {ticket.dueAt ? (
+          <span style={{
+            padding: '4px 8px',
+            borderRadius: 4,
+            background: getDueDateColor(),
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: 12,
+            display: 'inline-block'
+          }}>
+            {new Date(ticket.dueAt).toLocaleDateString()}
+          </span>
+        ) : (
+          <span style={{ color: '#999' }}>—</span>
         )}
-        <Link to={`/tickets/${ticket.id}`} aria-label={`Open ticket ${ticket.id}`}>Open →</Link>
       </td>
     </tr>
   )
@@ -352,9 +357,9 @@ export default function Dashboard() {
       }
       let aVal: any = (a as any)[sortColumn]
       let bVal: any = (b as any)[sortColumn]
-      if (sortColumn === 'createdAt' || sortColumn === 'updatedAt') {
-        aVal = new Date(aVal).getTime()
-        bVal = new Date(bVal).getTime()
+      if (sortColumn === 'createdAt' || sortColumn === 'updatedAt' || sortColumn === 'dueAt') {
+        aVal = aVal ? new Date(aVal).getTime() : 0
+        bVal = bVal ? new Date(bVal).getTime() : 0
       }
       if (typeof aVal === 'string') aVal = aVal.toLowerCase()
       if (typeof bVal === 'string') bVal = bVal.toLowerCase()
@@ -785,7 +790,9 @@ export default function Dashboard() {
               <th style={{cursor: 'pointer'}} onClick={() => handleSort('siteId')}>
                 Site <SortIcon col="siteId" />
               </th>
-              <th></th>
+              <th style={{cursor: 'pointer'}} onClick={() => handleSort('dueAt')}>
+                Due Date <SortIcon col="dueAt" />
+              </th>
             </tr>
           </thead>
           <tbody>
