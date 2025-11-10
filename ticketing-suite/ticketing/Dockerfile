@@ -35,7 +35,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=5 \
   CMD node -e "require('http').get('http://127.0.0.1:' + (process.env.PORT || 3000), r => process.exit(r.statusCode>=200 && r.statusCode<500?0:1)).on('error', () => process.exit(1))"
 
 # ✅ Don’t hardcode port here — Railway injects it dynamically
-EXPOSE 3000
+# EXPOSE 3000
 
 # ✅ Run migrations, then start the server on the injected port
 CMD sh -c '\
