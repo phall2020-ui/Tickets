@@ -12,7 +12,7 @@
     "start": "node dist/src/main.js || node dist/main.js",
     "start:prod": "node dist/src/main.js || node dist/main.js",
     "prisma:deploy": "prisma migrate deploy",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
     "seed": "ts-node prisma/seed.ts",
     "seed:test": "ts-node prisma/seed-test-data.ts",
     "test": "jest",
