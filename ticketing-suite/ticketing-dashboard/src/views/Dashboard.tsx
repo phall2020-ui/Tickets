@@ -369,42 +369,57 @@ export default function Dashboard() {
     return { byStatus, byPriority, byUser, total: sortedTickets.length }
   }, [sortedTickets])
 
-  const statusPalette: Record<string, string> = React.useMemo(() => ({
-    AWAITING_RESPONSE: '#5B8DEF',
-    ADE_TO_RESPOND: '#6C5CE7',
-    ON_HOLD: '#F39C12',
-    CLOSED: '#2ECC71'
-  }), [])
+const statusPalette: Record<string, string> = React.useMemo(() => ({
+  AWAITING_RESPONSE: '#5B8DEF',
+  ADE_TO_RESPOND: '#6C5CE7',
+  ON_HOLD: '#F39C12',
+  CLOSED: '#2ECC71'
+}), [])
 
-  const priorityPalette: Record<Ticket['priority'], string> = {
-    P1: '#E74C3C',
-    P2: '#E67E22',
-    P3: '#F1C40F',
-    P4: '#16A085'
+const priorityPalette: Record<Ticket['priority'], string> = {
+  P1: '#E74C3C',
+  P2: '#E67E22',
+  P3: '#F1C40F',
+  P4: '#16A085'
+}
+
+const userBreakdown = React.useMemo(() => {
+  return Object.entries(stats.byUser)
+    .sort(([, aCount], [, bCount]) => bCount - aCount)
+    .map(([userId, count]) => ({
+      userId,
+      count,
+      label: userId === 'unassigned'
+        ? 'Unassigned'
+        : (userMap[userId]?.name || userMap[userId]?.email || userId)
+    }))
+}, [stats.byUser, userMap])
+
+const hexToRgb = React.useCallback((hex: string) => {
+  const stripped = hex.replace('#', '')
+  const bigint = parseInt(stripped, 16)
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255
   }
+}, [])
 
-  const userBreakdown = React.useMemo(() => {
-    return Object.entries(stats.byUser)
-      .sort(([, aCount], [, bCount]) => bCount - aCount)
-      .map(([userId, count]) => ({
-        userId,
-        count,
-        label: userId === 'unassigned'
-          ? 'Unassigned'
-          : (userMap[userId]?.name || userMap[userId]?.email || userId)
-      }))
-  }, [stats.byUser, userMap])
-
-  const statsCardStyle = React.useCallback((accent: string): React.CSSProperties => ({
-    background: `linear-gradient(135deg, ${accent}55, ${accent}22)`,
-    border: `1px solid ${accent}77`,
+const statsCardStyle = React.useCallback((accent: string): React.CSSProperties => {
+  const { r, g, b } = hexToRgb(accent)
+  const primary = `rgba(${r}, ${g}, ${b}, 0.9)`
+  const secondary = `rgba(${r}, ${g}, ${b}, 0.6)`
+  return {
+    background: `linear-gradient(135deg, ${primary}, ${secondary})`,
+    border: `1px solid rgba(${r}, ${g}, ${b}, 0.85)`,
     borderRadius: 14,
-    padding: 18,
-    color: '#fefefe',
-    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.35)',
-    backdropFilter: 'blur(6px)',
-    minHeight: 150
-  }), [])
+    padding: 20,
+    color: '#ffffff',
+    textShadow: '0 1px 3px rgba(0, 0, 0, 0.6)',
+    boxShadow: '0 12px 28px rgba(15, 23, 42, 0.45)',
+    minHeight: 160
+  }
+}, [hexToRgb])
 
   // Phase 1 & 2 Feature Handlers
   const handleToggleSelect = (ticketId: string) => {
@@ -854,7 +869,7 @@ export default function Dashboard() {
               Status Breakdown
             </div>
             {Object.entries(stats.byStatus).length === 0 && (
-              <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 500 }}>No tickets yet.</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>No tickets yet.</div>
             )}
             {Object.entries(stats.byStatus).map(([statusKey, count]) => {
               const percent = stats.total ? Math.round((count / stats.total) * 100) : 0
@@ -862,9 +877,9 @@ export default function Dashboard() {
               const barColor = statusPalette[statusKey] || 'rgba(255,255,255,0.4)'
               return (
                 <div key={statusKey} style={{ marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 500 }}>
-                    <span style={{ opacity: 0.95 }}>{label}</span>
-                    <span style={{ opacity: 0.8 }}>{count} · {percent}%</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 600 }}>
+                    <span>{label}</span>
+                    <span>{count} · {percent}%</span>
                   </div>
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
                     <div
@@ -888,7 +903,7 @@ export default function Dashboard() {
               Priority Snapshot
             </div>
             {Object.entries(stats.byPriority).length === 0 && (
-              <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 500 }}>No tickets yet.</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>No tickets yet.</div>
             )}
             {Object.entries(stats.byPriority)
               .sort(([a], [b]) => a.localeCompare(b))
@@ -897,9 +912,9 @@ export default function Dashboard() {
                 const barColor = priorityPalette[priorityKey as Ticket['priority']] || 'rgba(255,255,255,0.35)'
                 return (
                   <div key={priorityKey} style={{ marginBottom: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 500 }}>
-                      <span style={{ opacity: 0.95 }}>Priority {priorityKey}</span>
-                      <span style={{ opacity: 0.8 }}>{count} · {percent}%</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 600 }}>
+                      <span>Priority {priorityKey}</span>
+                      <span>{count} · {percent}%</span>
                     </div>
                     <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
                       <div
@@ -923,16 +938,16 @@ export default function Dashboard() {
               Tickets by Assignee
             </div>
             {userBreakdown.length === 0 && (
-              <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 500 }}>No assignments yet.</div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>No assignments yet.</div>
             )}
             {userBreakdown.slice(0, 6).map((entry, index) => {
               const percent = stats.total ? Math.round((entry.count / stats.total) * 100) : 0
               const accent = ['#1ABC9C', '#48C9B0', '#76D7C4', '#A3E4D7', '#D0ECE7', '#E8F8F5'][index] || 'rgba(255,255,255,0.35)'
               return (
                 <div key={entry.userId} style={{ marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 500 }}>
-                    <span style={{ opacity: 0.95 }}>{entry.label}</span>
-                    <span style={{ opacity: 0.8 }}>{entry.count} · {percent}%</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 600 }}>
+                    <span>{entry.label}</span>
+                    <span>{entry.count} · {percent}%</span>
                   </div>
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
                     <div
@@ -950,7 +965,7 @@ export default function Dashboard() {
               )
             })}
             {userBreakdown.length > 6 && (
-              <div style={{ fontSize: 11.5, opacity: 0.75, marginTop: 6, fontWeight: 500 }}>
+              <div style={{ fontSize: 11.5, marginTop: 6, fontWeight: 600 }}>
                 Showing top 6 assignees of {userBreakdown.length}
               </div>
             )}
