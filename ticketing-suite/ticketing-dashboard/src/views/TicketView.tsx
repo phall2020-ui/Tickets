@@ -133,7 +133,7 @@ export default function TicketView() {
           </select>
           <label style={{width:100}}>Priority</label>
           <select value={t.priority} onChange={e=>setT({...t, priority:e.target.value})}>
-            {['P1','P2','P3','P4'].map(p => <option key={p} value={p}>{p}</option>)}
+            {['High', 'Medium', 'Low'].map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div className="row" style={{marginTop:12}}>

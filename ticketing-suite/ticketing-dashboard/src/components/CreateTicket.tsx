@@ -38,7 +38,7 @@ export default function CreateTicket({ onClose, onSuccess }: CreateTicketProps) 
     description: '',
     details: '',
     status: (STATUS_OPTIONS[0]?.value ?? 'AWAITING_RESPONSE') as TicketStatusValue,
-    priority: 'P3' as const,
+    priority: 'Medium' as const,
     assignedUserId: '',
     custom_fields: {} as Record<string, any>
   })
@@ -187,7 +187,7 @@ export default function CreateTicket({ onClose, onSuccess }: CreateTicketProps) 
                 label="Priority"
                 aria-label="Priority"
               >
-                {['P1', 'P2', 'P3', 'P4'].map(p => (
+                {['High', 'Medium', 'Low'].map(p => (
                   <MenuItem key={p} value={p}>{p}</MenuItem>
                 ))}
               </Select>

@@ -30,7 +30,7 @@ export const DEFAULT_TEMPLATES: TicketTemplate[] = [
     isGlobal: true,
     template: {
       type: 'PPA_TOP',
-      priority: 'P3',
+      priority: 'Medium',
       status: 'AWAITING_RESPONSE',
       description: '[Bug] ',
       details: '**Steps to Reproduce:**\n1. \n2. \n3. \n\n**Expected Behavior:**\n\n\n**Actual Behavior:**\n'
@@ -46,7 +46,7 @@ export const DEFAULT_TEMPLATES: TicketTemplate[] = [
     isGlobal: true,
     template: {
       type: 'PPA_OTHER',
-      priority: 'P4',
+      priority: 'Low',
       status: 'AWAITING_RESPONSE',
       description: '[Feature] ',
       details: '**Problem Statement:**\n\n\n**Proposed Solution:**\n\n\n**Benefits:**\n\n\n**Alternatives Considered:**\n\n'
@@ -62,7 +62,7 @@ export const DEFAULT_TEMPLATES: TicketTemplate[] = [
     isGlobal: true,
     template: {
       type: 'EPC',
-      priority: 'P3',
+      priority: 'Medium',
       status: 'AWAITING_RESPONSE',
       description: '[Support] ',
       details: '**Issue Description:**\n\n\n**Impact:**\n\n\n**Urgency:**\n\n'
@@ -78,7 +78,7 @@ export const DEFAULT_TEMPLATES: TicketTemplate[] = [
     isGlobal: true,
     template: {
       type: 'HSE',
-      priority: 'P1',
+      priority: 'High',
       status: 'ADE_TO_RESPOND',
       description: '[INCIDENT] ',
       details: '**Incident Summary:**\n\n\n**Impact:**\n\n\n**Timeline:**\n\n\n**Next Steps:**\n\n'
