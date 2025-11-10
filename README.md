@@ -113,6 +113,13 @@ This setup allows you to run the application using free managed services without
    OPENSEARCH_PASS=""
    S3_BUCKET=""
    AWS_REGION=""
+   
+   # Email notifications (optional - leave empty to disable)
+   SMTP_HOST=""
+   SMTP_PORT=""
+   SMTP_USER=""
+   SMTP_PASS=""
+   SMTP_FROM=""
    ```
 
 5. **Verify your configuration**
@@ -155,6 +162,7 @@ This setup allows you to run the application using free managed services without
 - ✓ Caching via Upstash Redis
 - ✗ Search is disabled (requires OpenSearch)
 - ✗ Attachments are disabled (requires S3)
+- ✗ Email notifications are disabled (requires SMTP configuration)
 
 ### Using Docker Compose with Managed Services
 
@@ -342,11 +350,17 @@ Once the backend is running, API documentation is available at:
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
 | `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
-| `S3_BUCKET` | AWS S3 bucket name | `ticketing-attachments` |
-| `AWS_REGION` | AWS region | `eu-west-2` |
-| `OPENSEARCH_NODE` | OpenSearch endpoint | `http://localhost:9200` |
-| `OPENSEARCH_USER` | OpenSearch username | `admin` |
-| `OPENSEARCH_PASS` | OpenSearch password | `admin` |
+| `S3_BUCKET` | AWS S3 bucket name (optional) | `ticketing-attachments` |
+| `AWS_REGION` | AWS region (optional) | `eu-west-2` |
+| `OPENSEARCH_NODE` | OpenSearch endpoint (optional) | `http://localhost:9200` |
+| `OPENSEARCH_USER` | OpenSearch username (optional) | `admin` |
+| `OPENSEARCH_PASS` | OpenSearch password (optional) | `admin` |
+| `SMTP_HOST` | SMTP server host (optional) | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP server port (optional) | `587` |
+| `SMTP_SECURE` | Use TLS/SSL (optional) | `true` for port 465, `false` for 587 |
+| `SMTP_USER` | SMTP username (optional) | `your-email@example.com` |
+| `SMTP_PASS` | SMTP password (optional) | `your-password` |
+| `SMTP_FROM` | Email from address (optional) | `"Ticketing System" <noreply@ticketing.local>` |
 | `NODE_ENV` | Environment | `development` or `production` |
 | `PORT` | Server port | `3000` |
 
@@ -378,6 +392,18 @@ The application supports optional features that can be enabled or disabled via e
 - **When Disabled**: Returns 501 (Not Implemented) on attachment operations
 - **UI Behavior**: Attachment UI is hidden/disabled when unavailable
 
+### Email Notifications
+- **Feature**: Sends welcome emails with login credentials when new users are created
+- **Requirements**:
+  - `SMTP_HOST` - SMTP server hostname
+  - `SMTP_PORT` - SMTP server port
+  - `SMTP_USER` - SMTP authentication username
+  - `SMTP_PASS` - SMTP authentication password
+  - `SMTP_SECURE` - (Optional) Set to `true` for port 465, `false` for 587
+  - `SMTP_FROM` - (Optional) Email from address
+- **When Disabled**: User registration works normally, but no email is sent
+- **Behavior**: Email sending is non-blocking and won't cause registration to fail
+
 ### Adding OpenSearch Later
 
 1. Set up an OpenSearch instance (local or managed)
@@ -403,6 +429,23 @@ The application supports optional features that can be enabled or disabled via e
    ```
 4. Restart the application
 5. Attachments will be automatically enabled
+
+### Adding Email Notifications Later
+
+1. Configure your SMTP server or use a service like Gmail, SendGrid, or AWS SES
+2. Add environment variables:
+   ```
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   SMTP_FROM="Ticketing System" <noreply@yourdomain.com>
+   ```
+3. Restart the application
+4. Email notifications will be automatically enabled
+
+**Note for Gmail users**: Use an [App Password](https://support.google.com/accounts/answer/185833) instead of your regular password.
 
 ## Health Checks
 
