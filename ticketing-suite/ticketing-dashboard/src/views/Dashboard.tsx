@@ -7,7 +7,6 @@ import AdvancedSearch from '../components/AdvancedSearch'
 import SavedViews from '../components/SavedViews'
 import BulkOperations from '../components/BulkOperations'
 import TicketQuickView from '../components/TicketQuickView'
-import TicketTemplates from '../components/TicketTemplates'
 import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp'
 import { EmptyState } from '../components/ui/EmptyState'
 import { StatusChip } from '../components/ui/StatusChip'
@@ -16,7 +15,6 @@ import { useNotifications } from '../lib/notifications'
 import { exportToCSV, exportToJSON } from '../lib/export'
 import { useKeyboardShortcuts, SHORTCUT_CATEGORIES, type KeyboardShortcut } from '../hooks/useKeyboardShortcuts'
 import { useSavedViews, type SavedView } from '../hooks/useSavedViews'
-import { useTicketTemplates } from '../hooks/useTicketTemplates'
 import { STATUS_OPTIONS, STATUS_LABELS } from '../lib/statuses'
 
 const StatusFilter: React.FC<{value:string,onChange:(v:string)=>void}> = ({value,onChange}) => (
@@ -189,7 +187,6 @@ export default function Dashboard() {
   // Phase 1 & 2 Features
   const [selectedTicketIds, setSelectedTicketIds] = React.useState<Set<string>>(new Set())
   const [quickViewTicketId, setQuickViewTicketId] = React.useState<string | null>(null)
-  const [showTemplates, setShowTemplates] = React.useState(false)
   const [showShortcutsHelp, setShowShortcutsHelp] = React.useState(false)
   
   // Load dropdown data
@@ -398,6 +395,17 @@ export default function Dashboard() {
       }))
   }, [stats.byUser, userMap])
 
+  const statsCardStyle = React.useCallback((accent: string): React.CSSProperties => ({
+    background: `linear-gradient(135deg, ${accent}55, ${accent}22)`,
+    border: `1px solid ${accent}77`,
+    borderRadius: 14,
+    padding: 18,
+    color: '#fefefe',
+    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.35)',
+    backdropFilter: 'blur(6px)',
+    minHeight: 150
+  }), [])
+
   // Phase 1 & 2 Feature Handlers
   const handleToggleSelect = (ticketId: string) => {
     setSelectedTicketIds(prev => {
@@ -508,12 +516,6 @@ export default function Dashboard() {
     showNotification('info', `Applied view: ${view.name}`)
   }
 
-  const handleApplyTemplate = (template: any) => {
-    // This will be handled by CreateTicket component
-    setShowTemplates(false)
-    setShowCreate(true)
-  }
-
   // Keyboard Shortcuts
   const shortcuts: KeyboardShortcut[] = [
     {
@@ -555,12 +557,6 @@ export default function Dashboard() {
       description: 'Select all tickets',
       action: () => handleSelectAll(),
       category: SHORTCUT_CATEGORIES.ACTIONS
-    },
-    {
-      key: 't',
-      description: 'Open templates',
-      action: () => setShowTemplates(true),
-      category: SHORTCUT_CATEGORIES.ACTIONS
     }
   ]
 
@@ -599,8 +595,6 @@ export default function Dashboard() {
           <button onClick={() => handleExport('json')} aria-label="Export to JSON">📥 JSON</button>
           <button className="primary" onClick={() => setShowCreate(true)}>+ Create Ticket</button>
           <button onClick={() => fetchList(true)} aria-label="Refresh tickets">Refresh</button>
-          <button onClick={() => setShowTemplates(true)} aria-label="Open templates">📋 Templates</button>
-          <button onClick={() => setShowShortcutsHelp(true)} aria-label="Show keyboard shortcuts" title="Press ? for shortcuts">⌨️</button>
         </div>
 
         {/* Saved Views */}
@@ -855,21 +849,12 @@ export default function Dashboard() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))'
           }}
         >
-          <div
-            style={{
-              background: 'linear-gradient(135deg, rgba(91, 141, 239, 0.35), rgba(91, 141, 239, 0.1))',
-              border: '1px solid rgba(91, 141, 239, 0.45)',
-              borderRadius: 12,
-              padding: 16,
-              color: '#fff',
-              boxShadow: '0 6px 18px rgba(17, 25, 40, 0.2)'
-            }}
-          >
+          <div style={statsCardStyle('#5B8DEF')}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, letterSpacing: 0.3 }}>
               Status Breakdown
             </div>
             {Object.entries(stats.byStatus).length === 0 && (
-              <div style={{ fontSize: 12, opacity: 0.75 }}>No tickets yet.</div>
+              <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 500 }}>No tickets yet.</div>
             )}
             {Object.entries(stats.byStatus).map(([statusKey, count]) => {
               const percent = stats.total ? Math.round((count / stats.total) * 100) : 0
@@ -877,9 +862,9 @@ export default function Dashboard() {
               const barColor = statusPalette[statusKey] || 'rgba(255,255,255,0.4)'
               return (
                 <div key={statusKey} style={{ marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                    <span style={{ opacity: 0.9 }}>{label}</span>
-                    <span style={{ opacity: 0.7 }}>{count} · {percent}%</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 500 }}>
+                    <span style={{ opacity: 0.95 }}>{label}</span>
+                    <span style={{ opacity: 0.8 }}>{count} · {percent}%</span>
                   </div>
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
                     <div
@@ -898,21 +883,12 @@ export default function Dashboard() {
             })}
           </div>
 
-          <div
-            style={{
-              background: 'linear-gradient(135deg, rgba(108, 92, 231, 0.35), rgba(108, 92, 231, 0.1))',
-              border: '1px solid rgba(108, 92, 231, 0.45)',
-              borderRadius: 12,
-              padding: 16,
-              color: '#fff',
-              boxShadow: '0 6px 18px rgba(17, 25, 40, 0.2)'
-            }}
-          >
+          <div style={statsCardStyle('#6C5CE7')}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, letterSpacing: 0.3 }}>
               Priority Snapshot
             </div>
             {Object.entries(stats.byPriority).length === 0 && (
-              <div style={{ fontSize: 12, opacity: 0.75 }}>No tickets yet.</div>
+              <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 500 }}>No tickets yet.</div>
             )}
             {Object.entries(stats.byPriority)
               .sort(([a], [b]) => a.localeCompare(b))
@@ -921,9 +897,9 @@ export default function Dashboard() {
                 const barColor = priorityPalette[priorityKey as Ticket['priority']] || 'rgba(255,255,255,0.35)'
                 return (
                   <div key={priorityKey} style={{ marginBottom: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ opacity: 0.9 }}>Priority {priorityKey}</span>
-                      <span style={{ opacity: 0.7 }}>{count} · {percent}%</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 500 }}>
+                      <span style={{ opacity: 0.95 }}>Priority {priorityKey}</span>
+                      <span style={{ opacity: 0.8 }}>{count} · {percent}%</span>
                     </div>
                     <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
                       <div
@@ -942,30 +918,21 @@ export default function Dashboard() {
               })}
           </div>
 
-          <div
-            style={{
-              background: 'linear-gradient(135deg, rgba(22, 160, 133, 0.35), rgba(22, 160, 133, 0.1))',
-              border: '1px solid rgba(22, 160, 133, 0.4)',
-              borderRadius: 12,
-              padding: 16,
-              color: '#fff',
-              boxShadow: '0 6px 18px rgba(17, 25, 40, 0.2)'
-            }}
-          >
+          <div style={statsCardStyle('#16A085')}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, letterSpacing: 0.3 }}>
               Tickets by Assignee
             </div>
             {userBreakdown.length === 0 && (
-              <div style={{ fontSize: 12, opacity: 0.75 }}>No assignments yet.</div>
+              <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 500 }}>No assignments yet.</div>
             )}
             {userBreakdown.slice(0, 6).map((entry, index) => {
               const percent = stats.total ? Math.round((entry.count / stats.total) * 100) : 0
               const accent = ['#1ABC9C', '#48C9B0', '#76D7C4', '#A3E4D7', '#D0ECE7', '#E8F8F5'][index] || 'rgba(255,255,255,0.35)'
               return (
                 <div key={entry.userId} style={{ marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                    <span style={{ opacity: 0.9 }}>{entry.label}</span>
-                    <span style={{ opacity: 0.7 }}>{entry.count} · {percent}%</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 500 }}>
+                    <span style={{ opacity: 0.95 }}>{entry.label}</span>
+                    <span style={{ opacity: 0.8 }}>{entry.count} · {percent}%</span>
                   </div>
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
                     <div
@@ -983,7 +950,7 @@ export default function Dashboard() {
               )
             })}
             {userBreakdown.length > 6 && (
-              <div style={{ fontSize: 11, opacity: 0.65, marginTop: 6 }}>
+              <div style={{ fontSize: 11.5, opacity: 0.75, marginTop: 6, fontWeight: 500 }}>
                 Showing top 6 assignees of {userBreakdown.length}
               </div>
             )}
@@ -1075,14 +1042,6 @@ export default function Dashboard() {
         sites={sites}
         types={types}
       />
-
-      {showTemplates && (
-        <TicketTemplates
-          open={showTemplates}
-          onClose={() => setShowTemplates(false)}
-          onSelectTemplate={handleApplyTemplate}
-        />
-      )}
 
       <KeyboardShortcutsHelp
         open={showShortcutsHelp}

@@ -3,7 +3,6 @@ import React from 'react'
 import { AppBar, Toolbar, Typography, Button, Box, Container, Tooltip } from '@mui/material'
 import {
   ConfirmationNumber as TicketIcon,
-  Favorite as HealthIcon,
   Person as PersonIcon,
   People as PeopleIcon,
   LocationOn as LocationIcon,
@@ -45,19 +44,6 @@ export default function App() {
               Ticketing Dashboard
             </Typography>
           </Link>
-          
-          <Tooltip title="Health Dashboard">
-            <Button
-              component={Link}
-              to="/health"
-              startIcon={<HealthIcon />}
-              size="small"
-              sx={{ display: { xs: 'none', md: 'flex' } }}
-              aria-label="Health dashboard"
-            >
-              Health
-            </Button>
-          </Tooltip>
           
           <Tooltip title="User Profile">
             <Button

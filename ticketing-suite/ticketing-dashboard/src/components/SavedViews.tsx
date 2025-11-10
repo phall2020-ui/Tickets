@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   List,
   ListItem,
   ListItemText,
@@ -15,59 +14,36 @@ import {
   Chip,
   Menu,
   MenuItem,
-  Typography,
-  Divider,
-  Stack
+  Divider
 } from '@mui/material'
 import {
-  Save as SaveIcon,
   Delete as DeleteIcon,
   PushPin as PinIcon,
   MoreVert as MoreIcon,
-  Star as StarIcon,
-  StarBorder as StarBorderIcon
+  Star as StarIcon
 } from '@mui/icons-material'
 import { useSavedViews, type SavedView } from '../hooks/useSavedViews'
 
+const BUILT_IN_VIEW_IDS = new Set(['my-tickets', 'unassigned', 'high-priority', 'recently-updated'])
+
 interface SavedViewsProps {
-  currentFilters: any
+  currentFilters?: any
   onApplyView: (view: SavedView) => void
 }
 
-export default function SavedViews({ currentFilters, onApplyView }: SavedViewsProps) {
+export default function SavedViews({ onApplyView }: SavedViewsProps) {
   const {
     views,
-    pinnedViews,
     customViews,
-    currentViewId,
-    createView,
     deleteView,
     togglePin,
     setDefaultView,
     applyView
   } = useSavedViews()
 
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [manageDialogOpen, setManageDialogOpen] = useState(false)
-  const [viewName, setViewName] = useState('')
-  const [viewDescription, setViewDescription] = useState('')
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null)
-
-  const handleSaveView = () => {
-    if (!viewName.trim()) return
-
-    createView({
-      name: viewName,
-      description: viewDescription,
-      filters: currentFilters,
-      isPinned: false
-    })
-
-    setViewName('')
-    setViewDescription('')
-    setSaveDialogOpen(false)
-  }
 
   const handleApplyView = (viewId: string) => {
     const view = applyView(viewId)
@@ -110,29 +86,8 @@ export default function SavedViews({ currentFilters, onApplyView }: SavedViewsPr
   return (
     <>
       {/* Quick Access Buttons */}
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-        {pinnedViews.map(view => (
-          <Chip
-            key={view.id}
-            label={view.name}
-            onClick={() => handleApplyView(view.id)}
-            color={currentViewId === view.id ? 'primary' : 'default'}
-            variant={currentViewId === view.id ? 'filled' : 'outlined'}
-            icon={view.isDefault ? <StarIcon /> : undefined}
-            size="small"
-          />
-        ))}
-        
-        <Button
-          size="small"
-          startIcon={<SaveIcon />}
-          onClick={() => setSaveDialogOpen(true)}
-          variant="outlined"
-        >
-          Save View
-        </Button>
-
-        {customViews.length > 0 && (
+      {customViews.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
           <Button
             size="small"
             onClick={() => setManageDialogOpen(true)}
@@ -140,46 +95,8 @@ export default function SavedViews({ currentFilters, onApplyView }: SavedViewsPr
           >
             Manage Views ({customViews.length})
           </Button>
-        )}
-      </Box>
-
-      {/* Save View Dialog */}
-      <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Save Current View</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              autoFocus
-              label="View Name"
-              fullWidth
-              value={viewName}
-              onChange={(e) => setViewName(e.target.value)}
-              placeholder="e.g., My Open Tickets"
-              required
-            />
-            <TextField
-              label="Description (optional)"
-              fullWidth
-              multiline
-              rows={2}
-              value={viewDescription}
-              onChange={(e) => setViewDescription(e.target.value)}
-              placeholder="Describe what this view shows..."
-            />
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Current filters will be saved with this view
-              </Typography>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSaveView} variant="contained" disabled={!viewName.trim()}>
-            Save View
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      )}
 
       {/* Manage Views Dialog */}
       <Dialog open={manageDialogOpen} onClose={() => setManageDialogOpen(false)} maxWidth="md" fullWidth>
@@ -188,7 +105,7 @@ export default function SavedViews({ currentFilters, onApplyView }: SavedViewsPr
           <List>
             {views.map((view, index) => {
               const isDefault = view.id === selectedViewId
-              const isBuiltIn = ['my-tickets', 'unassigned', 'high-priority', 'recently-updated'].includes(view.id)
+              const isBuiltIn = BUILT_IN_VIEW_IDS.has(view.id)
               
               return (
                 <React.Fragment key={view.id}>
