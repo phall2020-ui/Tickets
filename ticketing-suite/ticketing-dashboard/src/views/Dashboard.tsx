@@ -398,7 +398,12 @@ export default function Dashboard() {
       setSelectedTicketIds(new Set())
       fetchList(true)
     } catch (error: any) {
-      throw new Error(error?.message || 'Failed to update tickets')
+      const message = error?.response?.data?.message || error?.message || 'Failed to update tickets'
+      if (error && typeof error === 'object') {
+        error.message = Array.isArray(message) ? message.join(', ') : message
+        throw error
+      }
+      throw new Error(Array.isArray(message) ? message.join(', ') : message)
     }
   }
 

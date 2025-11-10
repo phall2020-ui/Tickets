@@ -86,7 +86,7 @@ export default function BulkOperations({
           updates.priority = selectedValue
           break
         case 'assign':
-          updates.assignedUserId = selectedValue === 'unassign' ? null : selectedValue
+          updates.assignedUserId = selectedValue === 'unassign' ? '' : selectedValue
           break
       }
 
@@ -94,7 +94,8 @@ export default function BulkOperations({
       handleCloseDialog()
       onClearSelection()
     } catch (err: any) {
-      setError(err?.message || 'Failed to update tickets')
+      const message = err?.response?.data?.message || err?.message || 'Failed to update tickets'
+      setError(Array.isArray(message) ? message.join(', ') : message)
     } finally {
       setLoading(false)
     }
