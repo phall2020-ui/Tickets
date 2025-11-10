@@ -55,11 +55,12 @@ const UserAvatar: React.FC<{ user?: UserOpt; size?: number }> = ({ user, size = 
 const TicketRow: React.FC<{
   ticket: Ticket
   users: UserOpt[]
+  sites: SiteOpt[]
   onUpdate: () => void
   isSelected?: boolean
   onToggleSelect?: () => void
   onQuickView?: () => void
-}> = ({ ticket, users, onUpdate, isSelected = false, onToggleSelect, onQuickView }) => {
+}> = ({ ticket, users, sites, onUpdate, isSelected = false, onToggleSelect, onQuickView }) => {
   const [quickSaving, setQuickSaving] = React.useState(false)
   const { showNotification } = useNotifications()
   const assignedUser = users.find(u => u.id === ticket.assignedUserId)
@@ -136,19 +137,19 @@ const TicketRow: React.FC<{
       <td>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <UserAvatar user={assignedUser} size={20} />
-        <select 
-          value={ticket.assignedUserId || ''} 
-          onChange={e => quickUpdate('assignedUserId', e.target.value || null)}
+          <select 
+            value={ticket.assignedUserId || ''} 
+            onChange={e => quickUpdate('assignedUserId', e.target.value || '')}
             style={{fontSize: 11, padding: 2, minWidth: 120, flex: 1}}
-          disabled={quickSaving}
+            disabled={quickSaving}
             aria-label={`Assigned user for ticket ${ticket.id}`}
-        >
-          <option value="">Unassigned</option>
-          {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
-        </select>
+          >
+            <option value="">Unassigned</option>
+            {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+          </select>
         </div>
       </td>
-      <td>{new Date(ticket.createdAt).toLocaleString()}</td>
+      <td>{sites.find(s => s.id === ticket.siteId)?.name || '—'}</td>
       <td>
         {onQuickView && (
           <button 
@@ -322,9 +323,18 @@ export default function Dashboard() {
 
   const activeFilters = [status, priority, type, siteId, assignedUserId, search, dateFrom, dateTo, ...Object.values(customFieldFilters)].filter(Boolean).length
 
+  const siteMap = React.useMemo(() => Object.fromEntries(sites.map(s => [s.id, s])), [sites])
+
   const sortedTickets = React.useMemo(() => {
     if (!sortColumn) return sortTickets(tickets, userId || undefined, cfg)
     const sorted = [...tickets].sort((a, b) => {
+      if (sortColumn === 'siteId') {
+        const aName = (siteMap[a.siteId]?.name || '').toLowerCase()
+        const bName = (siteMap[b.siteId]?.name || '').toLowerCase()
+        if (aName < bName) return sortDirection === 'asc' ? -1 : 1
+        if (aName > bName) return sortDirection === 'asc' ? 1 : -1
+        return 0
+      }
       let aVal: any = (a as any)[sortColumn]
       let bVal: any = (b as any)[sortColumn]
       if (sortColumn === 'createdAt' || sortColumn === 'updatedAt') {
@@ -338,7 +348,7 @@ export default function Dashboard() {
       return 0
     })
     return sorted
-  }, [tickets, sortColumn, sortDirection, userId, cfg])
+  }, [tickets, sortColumn, sortDirection, userId, cfg, siteMap])
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -731,8 +741,8 @@ export default function Dashboard() {
               <th style={{cursor: 'pointer'}} onClick={() => handleSort('assignedUserId')}>
                 Assigned <SortIcon col="assignedUserId" />
               </th>
-              <th style={{cursor: 'pointer'}} onClick={() => handleSort('createdAt')}>
-                Created <SortIcon col="createdAt" />
+              <th style={{cursor: 'pointer'}} onClick={() => handleSort('siteId')}>
+                Site <SortIcon col="siteId" />
               </th>
               <th></th>
             </tr>
@@ -764,7 +774,8 @@ export default function Dashboard() {
                 <TicketRow 
                   key={t.id} 
                   ticket={t} 
-                  users={users} 
+                  users={users}
+                  sites={sites}
                   onUpdate={() => fetchList(true)}
                   isSelected={selectedTicketIds.has(t.id)}
                   onToggleSelect={() => handleToggleSelect(t.id)}

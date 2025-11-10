@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { getTicket, updateTicket, listTicketHistory, type TicketHistoryEntry } from '../lib/api'
 import { listSites, listUsers, listIssueTypes, listFieldDefinitions, type SiteOpt, type UserOpt, type IssueTypeOpt, type FieldDefOpt } from '../lib/directory'
 import { STATUS_OPTIONS } from '../lib/statuses'
+import { filterFieldDefs, sanitizeCustomFieldValues } from '../lib/customFields'
 import Comments from '../components/Comments'
 import Attachments from '../components/Attachments'
 import CustomFieldsForm from '../components/CustomFieldsForm'
@@ -50,7 +51,11 @@ export default function TicketView() {
     if (!id) return
     try {
       const data = await getTicket(id)
-      setT(data)
+      setT({
+        ...data,
+        assignedUserId: data.assignedUserId ?? '',
+        customFields: sanitizeCustomFieldValues(data.customFields)
+      })
       const h = await listTicketHistory(id)
       setHistory(h)
     } catch (e: any) {
@@ -61,7 +66,7 @@ export default function TicketView() {
   React.useEffect(() => {
     load()
     Promise.all([listSites(), listUsers(), listIssueTypes(), listFieldDefinitions()]).then(([s, u, ty, f]) => {
-      setSites(s); setUsers(u); setTypes(ty); setFieldDefs(f)
+      setSites(s); setUsers(u); setTypes(ty); setFieldDefs(filterFieldDefs(f))
     }).catch(e => console.error('Failed to load dropdowns', e))
   }, [id])
   
@@ -79,8 +84,9 @@ export default function TicketView() {
       }
       if (t.assignedUserId !== undefined) payload.assignedUserId = t.assignedUserId
       if (t.dueAt !== undefined) payload.dueAt = t.dueAt
-      if (t.customFields && Object.keys(t.customFields).length > 0) {
-        payload.custom_fields = t.customFields
+      const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
+      if (Object.keys(sanitizedCustomFields).length > 0) {
+        payload.custom_fields = sanitizedCustomFields
       }
       await updateTicket(id, payload)
       showNotification('success', 'Ticket updated successfully')
@@ -91,6 +97,7 @@ export default function TicketView() {
     } finally { setSaving(false) }
   }
   if (!t) return <div className="container"><div className="panel">Loading…</div></div>
+  const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
   return (
     <div className="container">
       <div className="panel">
@@ -133,7 +140,7 @@ export default function TicketView() {
           <label style={{width:150}}>Assigned User</label>
           <div style={{flex:1, display: 'flex', alignItems: 'center', gap: 8}}>
             <UserAvatar user={users.find(u => u.id === t.assignedUserId)} size={32} />
-            <select value={t.assignedUserId || ''} onChange={e=>setT({...t, assignedUserId:e.target.value || null})} style={{flex:1}}>
+            <select value={t.assignedUserId || ''} onChange={e=>setT({...t, assignedUserId: e.target.value || ''})} style={{flex:1}}>
               <option value="">Unassigned</option>
               {users.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
             </select>
@@ -207,8 +214,8 @@ export default function TicketView() {
             <label style={{display:'block', marginBottom:8, fontWeight:600}}>Custom Fields</label>
             <CustomFieldsForm
               fieldDefs={fieldDefs}
-              values={t.customFields || {}}
-              onChange={(customFields) => setT({...t, customFields})}
+              values={sanitizedCustomFields}
+              onChange={(customFields) => setT({...t, customFields: sanitizeCustomFieldValues(customFields)})}
             />
           </div>
         )}

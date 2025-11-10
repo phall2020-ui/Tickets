@@ -16,6 +16,7 @@ import { useSites, useUsers, useIssueTypes, useFieldDefinitions } from '../hooks
 import { useCreateTicket } from '../hooks/useTickets'
 import CustomFieldsForm from './CustomFieldsForm'
 import { STATUS_OPTIONS, type TicketStatusValue } from '../lib/statuses'
+import { filterFieldDefs, sanitizeCustomFieldValues } from '../lib/customFields'
 
 interface CreateTicketProps {
   onClose: () => void
@@ -29,10 +30,7 @@ export default function CreateTicket({ onClose, onSuccess }: CreateTicketProps) 
   const { data: types = [] } = useIssueTypes()
   const { data: fieldDefs = [] } = useFieldDefinitions()
   const createTicketMutation = useCreateTicket()
-  const filteredFieldDefs = React.useMemo(
-    () => fieldDefs.filter(def => !['environment', 'estimated_hours'].includes(def.key)),
-    [fieldDefs]
-  )
+  const filteredFieldDefs = React.useMemo(() => filterFieldDefs(fieldDefs), [fieldDefs])
   
   const [formData, setFormData] = React.useState({
     siteId: '',
@@ -70,9 +68,7 @@ export default function CreateTicket({ onClose, onSuccess }: CreateTicketProps) 
       }
       if (formData.details) payload.details = formData.details
       if (formData.assignedUserId) payload.assignedUserId = formData.assignedUserId
-      const sanitizedCustomFields = Object.fromEntries(
-        Object.entries(formData.custom_fields).filter(([key]) => !['environment', 'estimated_hours'].includes(key))
-      )
+      const sanitizedCustomFields = sanitizeCustomFieldValues(formData.custom_fields)
       if (Object.keys(sanitizedCustomFields).length > 0) {
         payload.custom_fields = sanitizedCustomFields
       }
@@ -220,10 +216,7 @@ export default function CreateTicket({ onClose, onSuccess }: CreateTicketProps) 
                 fieldDefs={filteredFieldDefs}
                 values={formData.custom_fields}
                 onChange={(custom_fields) => {
-                  const sanitized = Object.fromEntries(
-                    Object.entries(custom_fields).filter(([key]) => !['environment', 'estimated_hours'].includes(key))
-                  )
-                  setFormData({ ...formData, custom_fields: sanitized })
+                  setFormData({ ...formData, custom_fields: sanitizeCustomFieldValues(custom_fields) })
                 }}
               />
             </Box>
