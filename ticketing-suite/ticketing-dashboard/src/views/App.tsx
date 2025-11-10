@@ -5,16 +5,12 @@ import {
   Toolbar,
   Typography,
   Button,
-  IconButton,
   TextField,
-  Chip,
   Box,
   Container,
   Tooltip,
 } from '@mui/material'
 import {
-  Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
   ConfirmationNumber as TicketIcon,
   Favorite as HealthIcon,
   Person as PersonIcon,
@@ -25,14 +21,12 @@ import UserRegistration from '../components/UserRegistration'
 import IssueTypeManagement from '../components/IssueTypeManagement'
 import FieldDefinitionManagement from '../components/FieldDefinitionManagement'
 import { useNotifications } from '../lib/notifications'
-import { useThemeMode } from '../theme/ThemeProvider'
 
 const SHOW_DEBUG = import.meta.env.VITE_SHOW_DEBUG_CONTROLS === 'true'
 
 export default function App() {
   const navigate = useNavigate()
   const { showNotification } = useNotifications()
-  const { mode, toggleTheme } = useThemeMode()
   const [token, setToken] = React.useState(localStorage.getItem('token') || '')
   const [user, setUser] = React.useState(localStorage.getItem('userId') || '')
   const [showUserReg, setShowUserReg] = React.useState(false)
@@ -68,13 +62,6 @@ export default function App() {
               Ticketing Dashboard
             </Typography>
           </Link>
-          
-          <Chip 
-            label={`API: ${import.meta.env.VITE_API_BASE || 'http://localhost:3000'}`} 
-            size="small"
-            variant="outlined"
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
-          />
           
           <Tooltip title="Health Dashboard">
             <Button
@@ -127,12 +114,6 @@ export default function App() {
             >
               Sites
             </Button>
-          </Tooltip>
-          
-          <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
-            <IconButton onClick={toggleTheme} color="inherit" aria-label="Toggle theme">
-              {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-            </IconButton>
           </Tooltip>
         </Toolbar>
         

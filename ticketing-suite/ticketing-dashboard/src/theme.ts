@@ -1,48 +1,48 @@
 import { createTheme } from '@mui/material/styles'
 
-// Create a dark theme matching the existing design
+// Create a light theme matching the modern, clean design
 export const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
-      main: '#5b9cff',
-      light: '#7db0ff',
-      dark: '#4186e8',
+      main: '#0066FF',
+      light: '#3385FF',
+      dark: '#0052CC',
     },
     secondary: {
-      main: '#f1c40f',
-      light: '#f4d03f',
-      dark: '#d4ac0d',
+      main: '#6C5CE7',
+      light: '#A29BFE',
+      dark: '#5F3DC4',
     },
     error: {
-      main: '#e74c3c',
-      light: '#ec7063',
-      dark: '#c0392b',
+      main: '#FF3B30',
+      light: '#FF6259',
+      dark: '#E62E24',
     },
     warning: {
-      main: '#f39c12',
-      light: '#f5b041',
-      dark: '#d68910',
+      main: '#FF9500',
+      light: '#FFAD33',
+      dark: '#CC7700',
     },
     success: {
-      main: '#2ecc71',
-      light: '#58d68d',
-      dark: '#27ae60',
+      main: '#34C759',
+      light: '#5DD67D',
+      dark: '#2AA047',
     },
     info: {
-      main: '#3498db',
-      light: '#5dade2',
-      dark: '#2874a6',
+      main: '#0066FF',
+      light: '#3385FF',
+      dark: '#0052CC',
     },
     background: {
-      default: '#0a0e14',
-      paper: '#0e141c',
+      default: '#F8F9FA',
+      paper: '#FFFFFF',
     },
     text: {
-      primary: '#e8eaed',
-      secondary: '#8ca0b3',
+      primary: '#1A1A1A',
+      secondary: '#6B7280',
     },
-    divider: '#1c2532',
+    divider: '#E5E7EB',
   },
   typography: {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -82,7 +82,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          border: '1px solid #1c2532',
+          border: '1px solid #E5E7EB',
         },
       },
     },
