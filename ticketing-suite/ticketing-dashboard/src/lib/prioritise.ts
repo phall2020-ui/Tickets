@@ -1,27 +1,59 @@
 import type { Ticket } from './api'
 
-const basePriorityWeights = { High: 50, Medium: 20, Low: 5 } as const
+const basePriorityWeights = { P1: 50, P2: 20, P3: 5, P4: 1 } as const
 type PriorityLevel = keyof typeof basePriorityWeights
 
 const normalizePriorityWeights = (weights?: Partial<Record<string, number>>): Record<PriorityLevel, number> => ({
-  High: typeof weights?.High === 'number'
-    ? weights.High
-    : typeof weights?.P1 === 'number'
-      ? weights.P1
-      : basePriorityWeights.High,
-  Medium: typeof weights?.Medium === 'number'
-    ? weights.Medium
-    : typeof weights?.P2 === 'number'
-      ? weights.P2
-      : basePriorityWeights.Medium,
-  Low: typeof weights?.Low === 'number'
-    ? weights.Low
-    : typeof weights?.P3 === 'number'
-      ? weights.P3
-      : typeof weights?.P4 === 'number'
-        ? weights.P4
-        : basePriorityWeights.Low,
+  P1: typeof weights?.P1 === 'number'
+    ? weights.P1
+    : typeof weights?.High === 'number'
+      ? weights.High
+      : basePriorityWeights.P1,
+  P2: typeof weights?.P2 === 'number'
+    ? weights.P2
+    : typeof weights?.Medium === 'number'
+      ? weights.Medium
+      : basePriorityWeights.P2,
+  P3: typeof weights?.P3 === 'number'
+    ? weights.P3
+    : typeof weights?.Low === 'number'
+      ? weights.Low
+      : basePriorityWeights.P3,
+  P4: typeof weights?.P4 === 'number'
+    ? weights.P4
+    : typeof weights?.VeryLow === 'number'
+      ? weights.VeryLow
+      : basePriorityWeights.P4,
 })
+
+const baseStatusWeights: Partial<Record<Ticket['status'], number>> = {
+  AWAITING_RESPONSE: 10,
+  ADE_TO_RESPOND: 6,
+  ON_HOLD: 2,
+  CLOSED: 0,
+}
+
+const normalizeStatusWeights = (weights?: Partial<Record<string, number>>): Partial<Record<Ticket['status'], number>> => {
+  if (!weights) return baseStatusWeights
+
+  const mapped: Partial<Record<Ticket['status'], number>> = { ...baseStatusWeights }
+  const legacyMap: Record<string, Ticket['status']> = {
+    NEW: 'AWAITING_RESPONSE',
+    TRIAGE: 'AWAITING_RESPONSE',
+    IN_PROGRESS: 'ADE_TO_RESPOND',
+    PENDING: 'ON_HOLD',
+    RESOLVED: 'CLOSED',
+    CLOSED: 'CLOSED',
+  }
+
+  Object.entries(weights).forEach(([key, value]) => {
+    if (typeof value !== 'number') return
+    const normalizedKey = (legacyMap[key] ?? key) as Ticket['status']
+    mapped[normalizedKey] = value
+  })
+
+  return mapped
+}
 
 export type PriorityCfg = {
   boostAssignedToMe: number,
@@ -31,13 +63,8 @@ export type PriorityCfg = {
 }
 export const defaultCfg: PriorityCfg = {
   boostAssignedToMe: 20,
-<<<<<<< HEAD
-  weightPriority: { P1: 50, P2: 20, P3: 5, P4: 1 },
-  weightStatus: { AWAITING_RESPONSE: 10, ADE_TO_RESPOND: 6, ON_HOLD: 2, CLOSED: 0 },
-=======
-  weightPriority: normalizePriorityWeights(basePriorityWeights),
-  weightStatus: { NEW: 10, TRIAGE: 6, IN_PROGRESS: 3, PENDING: 1 },
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
+  weightPriority: basePriorityWeights,
+  weightStatus: baseStatusWeights,
   typeBoosts: {}
 }
 export function loadCfg(userKey: string): PriorityCfg {
@@ -49,6 +76,7 @@ export function loadCfg(userKey: string): PriorityCfg {
       ...defaultCfg,
       ...parsed,
       weightPriority: normalizePriorityWeights(parsed.weightPriority),
+      weightStatus: normalizeStatusWeights(parsed.weightStatus),
     }
   } catch {
     return defaultCfg
@@ -58,6 +86,7 @@ export function saveCfg(userKey: string, cfg: PriorityCfg) {
   const normalized: PriorityCfg = {
     ...cfg,
     weightPriority: normalizePriorityWeights(cfg.weightPriority),
+    weightStatus: normalizeStatusWeights(cfg.weightStatus),
   }
   localStorage.setItem(`prio:${userKey}`, JSON.stringify(normalized))
 }

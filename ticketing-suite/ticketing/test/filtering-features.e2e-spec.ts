@@ -145,13 +145,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket created yesterday',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           createdAt: yesterday,
         },
       }).then(t => t.id);
@@ -162,13 +157,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket created today',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
         },
       }).then(t => t.id);
     });
@@ -226,13 +216,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket assigned to user 1',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           assignedUserId: testUserId,
         },
       });
@@ -243,13 +228,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket assigned to user 2',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           assignedUserId: testUserId2,
         },
       });
@@ -260,13 +240,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Unassigned ticket',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           assignedUserId: null,
         },
       });
@@ -318,13 +293,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket with custom field value A',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           customFields: { test_custom_field: 'value_a' },
         },
       });
@@ -335,13 +305,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket with custom field value B',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           customFields: { test_custom_field: 'value_b' },
         },
       });
@@ -352,13 +317,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket without custom field',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           customFields: {},
         },
       });
@@ -418,13 +378,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket for attachment listing test',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
         },
       }).then(t => t.id);
 
@@ -483,13 +438,8 @@ describe('New Filtering Features E2E Tests', () => {
           siteId: testSiteId,
           typeKey: 'FILTER_TEST',
           description: 'Ticket without attachments',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
         },
       });
 
@@ -528,13 +478,8 @@ describe('New Filtering Features E2E Tests', () => {
       expect(Array.isArray(response.body)).toBe(true);
       // All returned tickets should match all filters
       response.body.forEach((ticket: any) => {
-<<<<<<< HEAD
         expect(ticket.status).toBe('AWAITING_RESPONSE');
         expect(ticket.priority).toBe('P2');
-=======
-        expect(ticket.status).toBe('NEW');
-        expect(ticket.priority).toBe('Medium');
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
         expect(ticket.assignedUserId).toBe(testUserId);
       });
     });

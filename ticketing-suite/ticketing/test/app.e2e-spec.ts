@@ -176,13 +176,8 @@ describe('Ticketing System E2E Tests', () => {
           siteId: testSiteId,
           type: 'TEST_TYPE',
           description: 'Test ticket description',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           details: 'Test ticket details',
           assignedUserId: testUserId,
           custom_fields: { testField: 'testValue' },
@@ -191,13 +186,8 @@ describe('Ticketing System E2E Tests', () => {
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
           expect(res.body.description).toBe('Test ticket description');
-<<<<<<< HEAD
           expect(res.body.status).toBe('AWAITING_RESPONSE');
           expect(res.body.priority).toBe('P2');
-=======
-          expect(res.body.status).toBe('NEW');
-          expect(res.body.priority).toBe('Medium');
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           testTicketId = res.body.id;
         });
     });
@@ -270,25 +260,15 @@ describe('Ticketing System E2E Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           description: 'Updated test ticket description',
-<<<<<<< HEAD
           status: 'ADE_TO_RESPOND',
           priority: 'P1',
-=======
-          status: 'IN_PROGRESS',
-          priority: 'High',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
         })
         .expect(200)
         .expect((res) => {
           expect(res.body.id).toBe(testTicketId);
           expect(res.body.description).toBe('Updated test ticket description');
-<<<<<<< HEAD
           expect(res.body.status).toBe('ADE_TO_RESPOND');
           expect(res.body.priority).toBe('P1');
-=======
-          expect(res.body.status).toBe('IN_PROGRESS');
-          expect(res.body.priority).toBe('High');
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
         });
     });
 
@@ -309,13 +289,8 @@ describe('Ticketing System E2E Tests', () => {
           siteId: testSiteId,
           type: 'TEST_TYPE',
           description: 'Test ticket',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P2',
-=======
-          status: 'NEW',
-          priority: 'Medium',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
         })
         .expect(401);
     });
@@ -839,13 +814,8 @@ describe('Ticketing System E2E Tests', () => {
           siteId: testSiteId,
           type: 'TEST_TYPE',
           description: 'Lifecycle test ticket',
-<<<<<<< HEAD
           status: 'AWAITING_RESPONSE',
           priority: 'P1',
-=======
-          status: 'NEW',
-          priority: 'High',
->>>>>>> 74f08e7 (Align dashboard site column and custom field filtering)
           details: 'Testing complete lifecycle',
         })
         .expect(201);
