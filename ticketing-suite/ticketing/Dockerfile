@@ -35,8 +35,10 @@ COPY --from=build /app/package.json ./package.json
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=5 \
-  CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||3000), r=>process.exit(r.statusCode>=200&&r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+# Wait longer before first check, and check the real health path
+HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=5 \
+  CMD node -e "const http=require('http');const p=process.env.PORT;if(!p)process.exit(1);http.get({host:'127.0.0.1',port:p,path:'/health'},r=>process.exit(r.statusCode>=200&&r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+
 
 EXPOSE 3000
 ENTRYPOINT ["/app/start.sh"]
