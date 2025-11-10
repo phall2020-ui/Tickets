@@ -36,13 +36,24 @@ fi
 echo -e "${BLUE}📦 Starting services with Docker Compose...${NC}"
 cd ticketing-suite
 
+# Temporarily rename override file if it exists (it disables local services)
+OVERRIDE_FILE="docker-compose.override.yml"
+OVERRIDE_BACKUP="docker-compose.override.yml.backup"
+if [ -f "$OVERRIDE_FILE" ]; then
+    echo "Temporarily disabling override file..."
+    mv "$OVERRIDE_FILE" "$OVERRIDE_BACKUP"
+fi
+
+# Configure npm to handle SSL issues in Docker builds
+export NPM_CONFIG_STRICT_SSL=false
+
 # Stop any existing containers
 echo "Stopping any existing containers..."
 $DOCKER_COMPOSE down --remove-orphans 2>/dev/null || true
 
 # Start services
 echo "Starting all services..."
-$DOCKER_COMPOSE up -d
+$DOCKER_COMPOSE up -d --build
 
 echo ""
 echo -e "${YELLOW}⏳ Waiting for services to be healthy...${NC}"
@@ -182,10 +193,19 @@ fi
 
 echo ""
 echo -e "${BLUE}🧹 Cleanup${NC}"
+
+# Restore override file if we backed it up
+cd /home/runner/work/Tickets/Tickets/ticketing-suite
+if [ -f "$OVERRIDE_BACKUP" ]; then
+    echo "Restoring override file..."
+    mv "$OVERRIDE_BACKUP" "$OVERRIDE_FILE"
+fi
+
+cd ..
 read -p "Do you want to stop the services? (y/N) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    cd ../ticketing-suite
+    cd ticketing-suite
     echo "Stopping services..."
     $DOCKER_COMPOSE down
     echo -e "${GREEN}✅ Services stopped${NC}"
