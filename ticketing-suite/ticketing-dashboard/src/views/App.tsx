@@ -1,15 +1,6 @@
-import { Outlet, useNavigate, Link } from 'react-router-dom'
+import { Outlet, Link } from 'react-router-dom'
 import React from 'react'
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  TextField,
-  Box,
-  Container,
-  Tooltip,
-} from '@mui/material'
+import { AppBar, Toolbar, Typography, Button, Box, Container, Tooltip } from '@mui/material'
 import {
   ConfirmationNumber as TicketIcon,
   Favorite as HealthIcon,
@@ -22,35 +13,27 @@ import IssueTypeManagement from '../components/IssueTypeManagement'
 import FieldDefinitionManagement from '../components/FieldDefinitionManagement'
 import { useNotifications } from '../lib/notifications'
 
-const SHOW_DEBUG = import.meta.env.VITE_SHOW_DEBUG_CONTROLS === 'true'
-
 export default function App() {
-  const navigate = useNavigate()
   const { showNotification } = useNotifications()
-  const [token, setToken] = React.useState(localStorage.getItem('token') || '')
-  const [user, setUser] = React.useState(localStorage.getItem('userId') || '')
   const [showUserReg, setShowUserReg] = React.useState(false)
   const [showIssueTypes, setShowIssueTypes] = React.useState(false)
   const [showFieldDefs, setShowFieldDefs] = React.useState(false)
   const [userRole, setUserRole] = React.useState<'ADMIN' | 'USER' | null>(null)
   
-  const save = () => { 
-    localStorage.setItem('token', token)
-    localStorage.setItem('userId', user)
-    showNotification('success', 'Settings saved')
-    navigate(0) 
-  }
-  
   React.useEffect(() => {
     // Try to decode JWT to get user role
-    const t = localStorage.getItem('token') || token
+    const t = localStorage.getItem('token') || ''
     if (t) {
       try {
         const payload = JSON.parse(atob(t.split('.')[1]))
         setUserRole(payload.role || null)
-      } catch {}
+      } catch {
+        setUserRole(null)
+      }
+    } else {
+      setUserRole(null)
     }
-  }, [token])
+  }, [])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -116,34 +99,6 @@ export default function App() {
             </Button>
           </Tooltip>
         </Toolbar>
-        
-        {SHOW_DEBUG && (
-          <Toolbar sx={{ flexWrap: 'wrap', gap: 1, py: 1 }} data-testid="debug-controls">
-            <TextField
-              size="small"
-              placeholder="Bearer token"
-              value={token}
-              onChange={e => setToken(e.target.value)}
-              sx={{ flex: { xs: '1 1 100%', sm: '1 1 250px' }, minWidth: 200 }}
-              inputProps={{ 'aria-label': 'Bearer token' }}
-            />
-            <TextField
-              size="small"
-              placeholder="Your User ID"
-              value={user}
-              onChange={e => setUser(e.target.value)}
-              sx={{ flex: { xs: '1 1 100%', sm: '0 1 150px' }, minWidth: 150 }}
-              inputProps={{ 'aria-label': 'User ID' }}
-            />
-            <Button 
-              variant="contained" 
-              onClick={save}
-              aria-label="Save settings"
-            >
-              Save
-            </Button>
-          </Toolbar>
-        )}
       </AppBar>
       
       <Container maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
