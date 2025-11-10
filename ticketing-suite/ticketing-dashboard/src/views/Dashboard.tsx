@@ -108,9 +108,6 @@ const TicketRow: React.FC<{
       <td>
         <div className="linkish"><Link to={`/tickets/${ticket.id}`}>{ticket.description}</Link></div>
         <div className="status">{ticket.details || ''}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-          <span style={{ fontSize: 11, fontWeight: 600 }}>{ticket.priority}</span>
-        </div>
       </td>
       <td>
         <StatusChip status={ticket.status} />
