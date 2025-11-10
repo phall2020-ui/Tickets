@@ -1,0 +1,230 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  backend-tests:
+    name: Backend E2E Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ticketing
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ticketing-suite/ticketing/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ticketing-suite/ticketing
+        run: npm ci
+      
+      - name: Generate Prisma Client
+        working-directory: ticketing-suite/ticketing
+        run: npm run prisma:generate
+      
+      - name: Run database migrations
+        working-directory: ticketing-suite/ticketing
+        run: npm run prisma:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ticketing?schema=public
+      
+      - name: Seed test data
+        working-directory: ticketing-suite/ticketing
+        run: npm run seed:test || echo "Seed may already exist"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ticketing?schema=public
+      
+      - name: Run backend E2E tests
+        working-directory: ticketing-suite/ticketing
+        run: npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ticketing?schema=public
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+      
+      - name: Upload backend test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: ticketing-suite/ticketing/test-results/
+
+  frontend-tests:
+    name: Frontend E2E Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ticketing
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install backend dependencies
+        working-directory: ticketing-suite/ticketing
+        run: npm ci
+      
+      - name: Generate Prisma Client
+        working-directory: ticketing-suite/ticketing
+        run: npm run prisma:generate
+      
+      - name: Run database migrations
+        working-directory: ticketing-suite/ticketing
+        run: npm run prisma:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ticketing?schema=public
+      
+      - name: Seed test data
+        working-directory: ticketing-suite/ticketing
+        run: npm run seed:test || echo "Seed may already exist"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ticketing?schema=public
+      
+      - name: Start backend service
+        working-directory: ticketing-suite/ticketing
+        run: |
+          npm run build
+          nohup npm start &
+          sleep 10
+          curl http://localhost:3000/health || exit 1
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ticketing?schema=public
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: production
+          PORT: 3000
+      
+      - name: Install frontend dependencies
+        working-directory: ticketing-suite/ticketing-dashboard
+        run: npm ci
+      
+      - name: Start frontend service
+        working-directory: ticketing-suite/ticketing-dashboard
+        run: |
+          nohup npm run dev &
+          sleep 10
+        env:
+          VITE_API_BASE: http://localhost:3000
+      
+      - name: Install Playwright dependencies
+        working-directory: e2e-tests
+        run: npm ci
+      
+      - name: Install Playwright browsers
+        working-directory: e2e-tests
+        run: npx playwright install --with-deps chromium
+      
+      - name: Run frontend E2E tests
+        working-directory: e2e-tests
+        run: npm test
+      
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e-tests/playwright-report/
+          retention-days: 30
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: e2e-tests/test-results/
+
+  comprehensive-report:
+    name: Generate Comprehensive Report
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          path: test-results/
+      
+      - name: Generate comprehensive report
+        run: |
+          echo "# E2E Test Execution Report" > TEST_EXECUTION_REPORT.md
+          echo "" >> TEST_EXECUTION_REPORT.md
+          echo "**Execution Date:** $(date)" >> TEST_EXECUTION_REPORT.md
+          echo "**Workflow Run:** ${{ github.run_number }}" >> TEST_EXECUTION_REPORT.md
+          echo "**Commit:** ${{ github.sha }}" >> TEST_EXECUTION_REPORT.md
+          echo "" >> TEST_EXECUTION_REPORT.md
+          echo "## Test Results" >> TEST_EXECUTION_REPORT.md
+          echo "" >> TEST_EXECUTION_REPORT.md
+          echo "- Backend E2E Tests: ${{ needs.backend-tests.result }}" >> TEST_EXECUTION_REPORT.md
+          echo "- Frontend E2E Tests: ${{ needs.frontend-tests.result }}" >> TEST_EXECUTION_REPORT.md
+          echo "" >> TEST_EXECUTION_REPORT.md
+          echo "See artifacts for detailed test results and logs." >> TEST_EXECUTION_REPORT.md
+      
+      - name: Upload comprehensive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-execution-report
+          path: TEST_EXECUTION_REPORT.md
