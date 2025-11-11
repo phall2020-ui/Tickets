@@ -21,10 +21,10 @@ async function main() {
   // NOTE: these strings are bcrypt hashes
   // admin password: Admin123!
   const ADMIN_HASH =
-    '$2b$10$kH2pLk9hZl5xQGg7n8lE0u5hBf7mEw5eHqO5y7pD1v5C4mQ0u5uY6';
+    '$2b$10$qVI8IHMTz9BZdWhEgqomCuGHf0zwZ2QR687NSW/8mfJkAxTXpJRQe';
   // user password: User123!
   const USER_HASH =
-    '$2b$10$w4kO2w8E7zLZCzV5VQv0UuB4nB1iF2eD0pT3yH7rXqYyZl9JrVt7a';
+    '$2b$10$CvrIRien5vcp6eUmoMb7/ulYZq1od2E7sIwNGKSmLCqHhf5HdjqPK';
 
   await prisma.user.create({
     data: {
