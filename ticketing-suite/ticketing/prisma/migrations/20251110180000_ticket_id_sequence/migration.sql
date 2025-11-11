@@ -1,8 +1,14 @@
 -- Drop default UUID generation for ticket IDs; IDs will now be allocated manually.
-ALTER TABLE "Ticket" ALTER COLUMN "id" DROP DEFAULT;
+DO $$
+BEGIN
+    ALTER TABLE "Ticket" ALTER COLUMN "id" DROP DEFAULT;
+EXCEPTION
+    WHEN OTHERS THEN
+        NULL; -- Ignore if already dropped
+END $$;
 
 -- Create per-site ticket sequence table to track next ticket numbers and stable prefixes.
-CREATE TABLE "SiteTicketSequence" (
+CREATE TABLE IF NOT EXISTS "SiteTicketSequence" (
   "siteId" TEXT PRIMARY KEY,
   "tenantId" TEXT NOT NULL,
   "prefix" TEXT NOT NULL,
@@ -10,5 +16,5 @@ CREATE TABLE "SiteTicketSequence" (
   CONSTRAINT "SiteTicketSequence_siteId_fkey" FOREIGN KEY ("siteId") REFERENCES "Site"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "SiteTicketSequence_tenantId_idx" ON "SiteTicketSequence"("tenantId");
+CREATE INDEX IF NOT EXISTS "SiteTicketSequence_tenantId_idx" ON "SiteTicketSequence"("tenantId");
 
