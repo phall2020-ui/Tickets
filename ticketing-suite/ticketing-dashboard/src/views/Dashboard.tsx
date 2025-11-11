@@ -183,7 +183,7 @@ const TicketRow: React.FC<{
           {ticket.id}
         </span>
       </td>
-      <td>
+      <td style={{ width: '32%' }}>
         <div className="linkish"><Link to={`/tickets/${ticket.id}`}>{ticket.description}</Link></div>
         <div className="status">{ticket.details || ''}</div>
       </td>
@@ -977,10 +977,10 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                   aria-label="Select all tickets"
                 />
               </th>
-              <th style={{cursor: 'pointer'}} onClick={() => handleSort('id')}>
+              <th style={{cursor: 'pointer', width: 120}} onClick={() => handleSort('id')}>
                 Ticket ID <SortIcon col="id" />
               </th>
-              <th style={{cursor: 'pointer'}} onClick={() => handleSort('description')}>
+              <th style={{cursor: 'pointer', width: '35%'}} onClick={() => handleSort('description')}>
                 Description <SortIcon col="description" />
               </th>
               <th style={{cursor: 'pointer'}} onClick={() => handleSort('status')}>
