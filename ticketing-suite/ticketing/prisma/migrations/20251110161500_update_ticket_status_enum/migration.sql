@@ -1,22 +1,4 @@
--- Create new enum with target values
-CREATE TYPE "TicketStatus_new" AS ENUM ('AWAITING_RESPONSE', 'ADE_TO_RESPOND', 'ON_HOLD', 'CLOSED');
-
--- Update ticket statuses to the new values while transferring column type
-ALTER TABLE "Ticket"
-  ALTER COLUMN "status" TYPE "TicketStatus_new"
-  USING (
-    CASE
-      WHEN status IN ('NEW', 'TRIAGE') THEN 'AWAITING_RESPONSE'::"TicketStatus_new"
-      WHEN status IN ('IN_PROGRESS') THEN 'ADE_TO_RESPOND'::"TicketStatus_new"
-      WHEN status = 'PENDING' THEN 'ON_HOLD'::"TicketStatus_new"
-      WHEN status IN ('RESOLVED', 'CLOSED') THEN 'CLOSED'::"TicketStatus_new"
-      ELSE 'AWAITING_RESPONSE'::"TicketStatus_new"
-    END
-  );
-
--- Replace old enum type with the new definition
-DROP TYPE "TicketStatus";
-ALTER TYPE "TicketStatus_new" RENAME TO "TicketStatus";
+-- Enum already correct in init migration, no changes needed
 
 -- Insert new core issue types (idempotent) for every tenant
 WITH tenants AS (
