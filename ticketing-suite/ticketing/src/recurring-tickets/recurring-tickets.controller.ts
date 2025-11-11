@@ -28,6 +28,12 @@ export class RecurringTicketsController {
     return this.service.findAll(this.tenant(req), active);
   }
 
+  @Get('by-origin/:ticketId')
+  @Roles('AssetManager', 'OandM', 'Monitoring', 'Contractor', 'ADMIN', 'USER')
+  async findByOrigin(@Req() req: any, @Param('ticketId') ticketId: string) {
+    return this.service.findByOriginTicketId(this.tenant(req), ticketId);
+  }
+
   @Get(':id')
   @Roles('AssetManager', 'OandM', 'Monitoring', 'Contractor', 'ADMIN', 'USER')
   async findOne(@Req() req: any, @Param('id') id: string) {

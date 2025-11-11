@@ -18,6 +18,7 @@ export class RecurringTicketsService {
     return this.prisma.recurringTicket.create({
       data: {
         tenantId,
+        originTicketId: dto.originTicketId,
         siteId: dto.siteId,
         typeKey: dto.typeKey,
         description: dto.description,
@@ -49,6 +50,15 @@ export class RecurringTicketsService {
   async findOne(tenantId: string, id: string) {
     return this.prisma.recurringTicket.findFirst({
       where: { id, tenantId },
+    });
+  }
+
+  async findByOriginTicketId(tenantId: string, ticketId: string) {
+    return this.prisma.recurringTicket.findFirst({
+      where: {
+        tenantId,
+        originTicketId: ticketId,
+      },
     });
   }
 

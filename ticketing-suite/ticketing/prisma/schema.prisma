@@ -67,6 +67,7 @@ model Ticket {
   attachments     Attachment[]
   outboxEntries   Outbox[]
   history         TicketHistory[]
+  recurringConfig RecurringTicket? @relation("TicketRecurringLink")
 
   @@index([tenantId, status, priority, createdAt])
   @@index([tenantId, siteId, createdAt])
@@ -234,6 +235,8 @@ model RecurringTicket {
   nextScheduledAt       DateTime
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
+  originTicketId        String?             @unique
+  originTicket          Ticket?             @relation("TicketRecurringLink", fields: [originTicketId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, isActive, nextScheduledAt])
   @@index([tenantId, siteId])

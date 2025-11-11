@@ -54,6 +54,7 @@ export const createTicket = async (data: {
 
 export interface RecurringTicketPayload {
   siteId: string
+  originTicketId: string
   typeKey: string
   description: string
   priority: Ticket['priority']
@@ -63,10 +64,46 @@ export interface RecurringTicketPayload {
   endDate?: string
   leadTimeDays: number
   details?: string
+  assignedUserId?: string
+  customFields?: Record<string, any>
 }
 
 export const createRecurringTicket = async (data: RecurringTicketPayload) =>
   (await client.post('/recurring-tickets', data)).data
+export interface RecurringTicketConfig {
+  id: string
+  originTicketId: string
+  siteId: string
+  typeKey: string
+  description: string
+  priority: Ticket['priority']
+  details?: string
+  assignedUserId?: string | null
+  customFields: Record<string, any>
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
+  intervalValue: number
+  startDate: string
+  endDate?: string
+  leadTimeDays: number
+  isActive: boolean
+  lastGeneratedAt?: string
+  nextScheduledAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export const getRecurringTicketByOrigin = async (ticketId: string) =>
+  (await client.get<RecurringTicketConfig>(`/recurring-tickets/by-origin/${ticketId}`)).data
+
+export const updateRecurringTicket = async (id: string, data: Partial<RecurringTicketPayload> & { isActive?: boolean }) =>
+  (await client.patch<RecurringTicketConfig>(`/recurring-tickets/${id}`, data)).data
+
+export const listRecurringTickets = async (params?: { isActive?: boolean }) => {
+  const cleanParams: Record<string, any> = {}
+  if (params && params.isActive !== undefined) cleanParams.isActive = params.isActive
+  return (await client.get<RecurringTicketConfig[]>('/recurring-tickets', { params: cleanParams })).data
+}
+
 export const updateTicket = async (id: string, patch: Partial<Ticket> & { custom_fields?: any }) => (await client.patch<Ticket>(`/tickets/${id}`, patch)).data
 export const bulkUpdateTickets = async (payload: {
   ids: string[]

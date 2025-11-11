@@ -1,7 +1,7 @@
 import React from 'react'
 import { bulkDeleteTickets, bulkUpdateTickets, listTickets, type Ticket } from '../lib/api'
 import { sortTickets, loadCfg, saveCfg, type PriorityCfg } from '../lib/prioritise'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import CreateTicket from '../components/CreateTicket'
 import AdvancedSearch from '../components/AdvancedSearch'
 import SavedViews from '../components/SavedViews'
@@ -15,6 +15,8 @@ import { useNotifications } from '../lib/notifications'
 import { exportToCSV, exportToJSON } from '../lib/export'
 import { useKeyboardShortcuts, SHORTCUT_CATEGORIES, type KeyboardShortcut } from '../hooks/useKeyboardShortcuts'
 import { useSavedViews, type SavedView } from '../hooks/useSavedViews'
+import { useRecurringTickets } from '../hooks/useTickets'
+import type { RecurringTicketConfig } from '../lib/api'
 import { STATUS_OPTIONS, STATUS_LABELS } from '../lib/statuses'
 
 const CONTROL_HEIGHT = 36
@@ -258,6 +260,7 @@ const TicketRow: React.FC<{
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { showNotification } = useNotifications()
   const [tickets, setTickets] = React.useState<Ticket[]>([])
   const [status, setStatus] = React.useState('')
@@ -347,10 +350,10 @@ export default function Dashboard() {
   const handleExport = (format: 'csv' | 'json') => {
     try {
       if (format === 'csv') {
-        exportToCSV(sortedTickets, `tickets-${new Date().toISOString().split('T')[0]}.csv`)
+        exportToCSV(visibleTickets, `tickets-${new Date().toISOString().split('T')[0]}.csv`)
         showNotification('success', 'Exported to CSV')
       } else {
-        exportToJSON(sortedTickets, `tickets-${new Date().toISOString().split('T')[0]}.json`)
+        exportToJSON(visibleTickets, `tickets-${new Date().toISOString().split('T')[0]}.json`)
         showNotification('success', 'Exported to JSON')
       }
     } catch (e: any) {
@@ -557,10 +560,10 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
   }
 
   const handleSelectAll = () => {
-    if (selectedTicketIds.size === sortedTickets.length) {
+    if (selectedTicketIds.size === visibleTickets.length) {
       setSelectedTicketIds(new Set())
     } else {
-      setSelectedTicketIds(new Set(sortedTickets.map(t => t.id)))
+      setSelectedTicketIds(new Set(visibleTickets.map(t => t.id)))
     }
   }
 
@@ -615,12 +618,12 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
 
   const handleQuickViewNavigate = (direction: 'prev' | 'next') => {
     if (!quickViewTicketId) return
-    const currentIndex = sortedTickets.findIndex(t => t.id === quickViewTicketId)
+    const currentIndex = visibleTickets.findIndex(t => t.id === quickViewTicketId)
     if (currentIndex === -1) return
     
     const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1
-    if (newIndex >= 0 && newIndex < sortedTickets.length) {
-      setQuickViewTicketId(sortedTickets[newIndex].id)
+    if (newIndex >= 0 && newIndex < visibleTickets.length) {
+      setQuickViewTicketId(visibleTickets[newIndex].id)
     }
   }
 
@@ -699,8 +702,40 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
 
   useKeyboardShortcuts(shortcuts)
 
-  const selectedTickets = sortedTickets.filter(t => selectedTicketIds.has(t.id))
-  const quickViewIndex = quickViewTicketId ? sortedTickets.findIndex(t => t.id === quickViewTicketId) : -1
+  const { data: recurringSchedules = [] } = useRecurringTickets()
+  const upcomingRecurringMap = React.useMemo(() => {
+    const now = new Date()
+    const map = new Map<string, RecurringTicketConfig>()
+    recurringSchedules.forEach(schedule => {
+      if (!schedule.originTicketId || !schedule.isActive) return
+      const triggerDate = new Date(schedule.nextScheduledAt)
+      if (triggerDate > now) {
+        map.set(schedule.originTicketId, schedule)
+      }
+    })
+    return map
+  }, [recurringSchedules])
+
+  const visibleTickets = React.useMemo(
+    () => sortedTickets.filter(t => !upcomingRecurringMap.has(t.id)),
+    [sortedTickets, upcomingRecurringMap]
+  )
+
+  const selectedTickets = visibleTickets.filter(t => selectedTicketIds.has(t.id))
+  const quickViewIndex = quickViewTicketId ? visibleTickets.findIndex(t => t.id === quickViewTicketId) : -1
+
+  React.useEffect(() => {
+    setSelectedTicketIds(prev => {
+      const filtered = new Set(Array.from(prev).filter(id => !upcomingRecurringMap.has(id)))
+      return filtered.size === prev.size ? prev : filtered
+    })
+  }, [upcomingRecurringMap])
+
+  React.useEffect(() => {
+    if (quickViewTicketId && upcomingRecurringMap.has(quickViewTicketId)) {
+      setQuickViewTicketId(null)
+    }
+  }, [quickViewTicketId, upcomingRecurringMap])
   const buttonHoverIn = React.useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'translateY(-2px)'
     e.currentTarget.style.boxShadow = '0 8px 16px rgba(15, 23, 42, 0.12)'
@@ -790,6 +825,15 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
           </div>
 
           <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate('/recurring')}
+              style={{ ...baseButtonStyle }}
+              data-border="1px solid #d6d9dd"
+              onMouseEnter={buttonHoverIn}
+              onMouseLeave={buttonHoverOut}
+            >
+              Future Activities
+            </button>
             <button
               onClick={() => setShowAdvancedSearch(true)}
               aria-label="Advanced search"
@@ -999,7 +1043,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
         )}
 
         <div style={{marginBottom: 8, fontSize: 12, color: '#999'}}>
-          Showing {sortedTickets.length} ticket{sortedTickets.length !== 1 ? 's' : ''}
+          Showing {visibleTickets.length} ticket{visibleTickets.length !== 1 ? 's' : ''}
         </div>
 
         <table>
@@ -1008,7 +1052,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
               <th style={{width: 40}}>
                 <input
                   type="checkbox"
-                  checked={selectedTicketIds.size > 0 && selectedTicketIds.size === sortedTickets.length}
+                  checked={visibleTickets.length > 0 && selectedTicketIds.size === visibleTickets.length}
                   onChange={handleSelectAll}
                   aria-label="Select all tickets"
                 />
@@ -1040,9 +1084,9 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             </tr>
           </thead>
           <tbody>
-            {loading && sortedTickets.length === 0 ? <tr><td colSpan={8}>Loading…</td></tr>
-            : sortedTickets.length === 0 ? (
-              <tr><td colSpan={8}>
+            {loading && visibleTickets.length === 0 ? <tr><td colSpan={9}>Loading…</td></tr>
+            : visibleTickets.length === 0 ? (
+              <tr><td colSpan={9}>
                 <EmptyState
                   icon="filter"
                   title="No tickets found"
@@ -1062,7 +1106,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                 />
               </td></tr>
             )
-            : sortedTickets.map(t => (
+            : visibleTickets.map(t => (
                 <TicketRow
                   key={t.id}
                   ticket={t}
