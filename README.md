@@ -434,6 +434,28 @@ Prisma migrations work seamlessly with Neon:
 npm run prisma:deploy
 ```
 
+### Handling Failed Migrations in Production
+
+If a migration fails during deployment (Prisma error **P3009**), the system includes automatic resolution:
+
+1. **Automatic Resolution**: The startup script automatically detects and attempts to resolve failed migrations
+2. **Manual Resolution**: If needed, you can manually resolve migrations:
+
+```bash
+# Check migration status
+npx prisma migrate status
+
+# Mark failed migration as rolled back (allows re-application)
+npx prisma migrate resolve --rolled-back "migration_name"
+
+# Or mark as applied (if changes are already in database)
+npx prisma migrate resolve --applied "migration_name"
+```
+
+3. **Emergency Skip**: Set `SKIP_MIGRATIONS=1` to temporarily skip migrations and start the app
+
+For detailed information, see [`ticketing-suite/ticketing/MIGRATION_RESOLUTION_GUIDE.md`](ticketing-suite/ticketing/MIGRATION_RESOLUTION_GUIDE.md)
+
 ## Testing
 
 ### Running Tests
