@@ -46,8 +46,8 @@ const FREQUENCY_OPTIONS = [
 ] as const
 
 type FrequencyValue = typeof FREQUENCY_OPTIONS[number]['value']
-
-const [formData, setFormData] = React.useState({
+  
+  const [formData, setFormData] = React.useState({
     siteId: '',
     type: '',
     description: '',
@@ -65,7 +65,7 @@ const [recurringSettings, setRecurringSettings] = React.useState({
   startDate: new Date().toISOString().split('T')[0],
   endDate: '',
   leadTimeDays: 7,
-})
+  })
 
   React.useEffect(() => {
     if (sites.length > 0 && !formData.siteId) {

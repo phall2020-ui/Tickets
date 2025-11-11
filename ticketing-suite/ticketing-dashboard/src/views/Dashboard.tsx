@@ -136,10 +136,11 @@ const TicketRow: React.FC<{
   users: UserOpt[]
   sites: SiteOpt[]
   types: IssueTypeOpt[]
+  recurringSchedule?: RecurringTicketConfig
   isSelected?: boolean
   onToggleSelect?: () => void
   onQuickView?: () => void
-}> = ({ ticket, users, sites, types, isSelected = false, onToggleSelect, onQuickView }) => {
+}> = ({ ticket, users, sites, types, recurringSchedule, isSelected = false, onToggleSelect, onQuickView }) => {
   const assignedUser = users.find(u => u.id === ticket.assignedUserId)
   const typeLabel = types.find(t => t.key === ticket.typeKey)?.label ?? ticket.typeKey.replace(/_/g, ' ')
   const priorityColorMap: Record<Ticket['priority'], string> = {
@@ -150,9 +151,18 @@ const TicketRow: React.FC<{
   }
 
   // RAG color coding for due dates
+  const effectiveDueDate = React.useMemo(() => {
+    if (recurringSchedule) {
+      const due = new Date(recurringSchedule.nextScheduledAt)
+      due.setDate(due.getDate() + recurringSchedule.leadTimeDays)
+      return due
+    }
+    return ticket.dueAt ? new Date(ticket.dueAt) : undefined
+  }, [recurringSchedule, ticket.dueAt])
+
   const getDueDateColor = () => {
-    if (!ticket.dueAt) return undefined
-    const dueDate = new Date(ticket.dueAt)
+    if (!effectiveDueDate) return undefined
+    const dueDate = effectiveDueDate
     const now = new Date()
     const diffMs = dueDate.getTime() - now.getTime()
     const diffDays = diffMs / (1000 * 60 * 60 * 24)
@@ -210,7 +220,7 @@ const TicketRow: React.FC<{
             letterSpacing: 0.3
           }}
           title={`Priority ${ticket.priority}`}
-        >
+          >
           <span
             aria-hidden
             style={{
@@ -233,13 +243,13 @@ const TicketRow: React.FC<{
         <div
           style={{ display: 'flex', justifyContent: 'center' }}
           aria-label={`Assigned user for ticket ${ticket.id}: ${assignedUser ? (assignedUser.name || assignedUser.email) : 'Unassigned'}`}
-        >
+          >
           <UserAvatar user={assignedUser} size={24} showMargin={false} />
         </div>
       </td>
       <td>{sites.find(s => s.id === ticket.siteId)?.name || '—'}</td>
       <td>
-        {ticket.dueAt ? (
+        {effectiveDueDate ? (
           <span style={{
             padding: '4px 8px',
             borderRadius: 4,
@@ -249,7 +259,7 @@ const TicketRow: React.FC<{
             fontSize: 12,
             display: 'inline-block'
           }}>
-            {new Date(ticket.dueAt).toLocaleDateString()}
+            {effectiveDueDate.toLocaleDateString()}
           </span>
         ) : (
           <span style={{ color: '#999' }}>—</span>
@@ -703,18 +713,28 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
   useKeyboardShortcuts(shortcuts)
 
   const { data: recurringSchedules = [] } = useRecurringTickets()
-  const upcomingRecurringMap = React.useMemo(() => {
-    const now = new Date()
+  const recurringScheduleMap = React.useMemo(() => {
     const map = new Map<string, RecurringTicketConfig>()
     recurringSchedules.forEach(schedule => {
-      if (!schedule.originTicketId || !schedule.isActive) return
-      const triggerDate = new Date(schedule.nextScheduledAt)
-      if (triggerDate > now) {
+      if (schedule.originTicketId) {
         map.set(schedule.originTicketId, schedule)
       }
     })
     return map
   }, [recurringSchedules])
+
+  const upcomingRecurringMap = React.useMemo(() => {
+    const now = new Date()
+    const map = new Map<string, RecurringTicketConfig>()
+    recurringScheduleMap.forEach((schedule, ticketId) => {
+      if (!schedule.isActive) return
+      const triggerDate = new Date(schedule.nextScheduledAt)
+      if (triggerDate > now) {
+        map.set(ticketId, schedule)
+      }
+    })
+    return map
+  }, [recurringScheduleMap])
 
   const visibleTickets = React.useMemo(
     () => sortedTickets.filter(t => !upcomingRecurringMap.has(t.id)),
@@ -782,11 +802,11 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             >
               🔍
             </span>
-            <input
+          <input 
               placeholder="Search tickets..."
-              value={search}
+            value={search} 
               onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && fetchList(true)}
+            onKeyDown={e => e.key === 'Enter' && fetchList(true)}
               style={{
                 width: '100%',
                 padding: '10px 12px 10px 34px',
@@ -797,12 +817,12 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                 boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)',
                 height: CONTROL_HEIGHT
               }}
-              aria-label="Search tickets"
-            />
+            aria-label="Search tickets"
+          />
           </div>
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <StatusFilter value={status} onChange={setStatus} />
+          <StatusFilter value={status} onChange={setStatus} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Rows</span>
               <div style={segmentContainerStyle} role="group" aria-label="Rows per page">
@@ -817,7 +837,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                       aria-pressed={isActive}
                     >
                       {size}
-                    </button>
+          </button>
                   )
                 })}
               </div>
@@ -833,7 +853,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
               onMouseLeave={buttonHoverOut}
             >
               Future Activities
-            </button>
+          </button>
             <button
               onClick={() => setShowAdvancedSearch(true)}
               aria-label="Advanced search"
@@ -1107,12 +1127,13 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
               </td></tr>
             )
             : visibleTickets.map(t => (
-                <TicketRow
-                  key={t.id}
-                  ticket={t}
+                <TicketRow 
+                  key={t.id} 
+                  ticket={t} 
                   users={users}
                   sites={sites}
                   types={types}
+                  recurringSchedule={recurringScheduleMap.get(t.id)}
                   isSelected={selectedTicketIds.has(t.id)}
                   onToggleSelect={() => handleToggleSelect(t.id)}
                   onQuickView={() => handleQuickView(t.id)}
@@ -1159,7 +1180,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4, fontWeight: 600 }}>
                     <span>{label}</span>
                     <span>{count} · {percent}%</span>
-                  </div>
+        </div>
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 6 }}>
                     <div
                       style={{
@@ -1171,8 +1192,8 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                         transition: 'width 0.3s ease'
                       }}
                     />
-                  </div>
-                </div>
+            </div>
+        </div>
               )
             })}
           </div>
