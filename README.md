@@ -436,19 +436,82 @@ npm run prisma:deploy
 
 ## Testing
 
-### Running Tests
+### Comprehensive E2E Testing
 
-The application includes comprehensive test suites that work with minimal configuration:
+This repository includes **116 comprehensive end-to-end tests** created by PR29 that validate the entire system:
+
+- **31 Backend E2E tests** - API endpoints, multi-tenancy, authentication
+- **85 Frontend E2E tests** - Dashboard features, user workflows, UI interactions
+
+#### Quick Start - Run All Tests
 
 ```bash
-cd ticketing-suite/ticketing
-
-# Run unit tests
-npm run test
-
-# Run e2e tests (requires database)
-npm run test:e2e
+# Automated testing with Docker Compose
+./run-e2e-tests.sh
 ```
+
+This will:
+1. Start all services (PostgreSQL, Redis, OpenSearch, Backend, Frontend)
+2. Run backend E2E tests (31 tests)
+3. Run frontend E2E tests (85 tests)  
+4. Generate comprehensive test report
+5. Clean up services
+
+#### Manual Testing
+
+```bash
+# Start services
+cd ticketing-suite
+docker-compose up -d --build
+
+# Run backend tests
+cd ticketing
+npm run test:e2e
+
+# Run frontend tests (in another terminal)
+cd ../../e2e-tests
+npm install
+npx playwright install chromium --with-deps
+npm test
+
+# Stop services
+cd ../ticketing-suite
+docker-compose down
+```
+
+### Test Coverage
+
+**Backend Tests (31 tests):**
+- Health checks
+- Directory module (sites, users, issue types)
+- Tickets CRUD operations
+- Comments management
+- Attachments handling
+- Multi-tenancy isolation
+- Authentication & authorization
+
+**Frontend Tests (85 tests):**
+- Authentication flows
+- Dashboard features (create, edit, delete, bulk operations)
+- Search and filtering
+- Comments and attachments
+- Export functionality
+- Keyboard shortcuts
+- Responsive design
+- Error handling
+- Complete user workflows
+
+### Documentation
+
+See [E2E_TEST_EXECUTION_GUIDE.md](./E2E_TEST_EXECUTION_GUIDE.md) for comprehensive testing documentation including:
+- Detailed test descriptions
+- CI/CD integration
+- Troubleshooting guide
+- Advanced testing options
+
+### Continuous Integration
+
+Tests run automatically on every push via GitHub Actions. See `.github/workflows/e2e-tests.yml`.
 
 ### Testing with Optional Features Disabled
 
@@ -458,16 +521,6 @@ Tests are designed to work whether optional features (search, attachments) are e
 - **Core CRUD tests**: Work without OpenSearch or S3 configured
 - **Search tests**: Use database filtering when OpenSearch is unavailable
 - **Attachment tests**: Can be skipped when S3 is not configured
-
-To run tests with minimal configuration (no OpenSearch/S3):
-```bash
-# Set only required environment variables
-export DATABASE_URL="postgresql://..."
-export REDIS_URL="redis://..."
-
-# Run tests
-npm run test:e2e
-```
 
 ## License
 
