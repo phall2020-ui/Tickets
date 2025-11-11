@@ -1,13 +1,24 @@
 import React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getTicket, updateTicket, listTicketHistory, type TicketHistoryEntry } from '../lib/api'
+import { getTicket, updateTicket, listTicketHistory, createRecurringTicket, updateRecurringTicket, type TicketHistoryEntry, type RecurringTicketConfig } from '../lib/api'
 import { listSites, listUsers, listIssueTypes, listFieldDefinitions, type SiteOpt, type UserOpt, type IssueTypeOpt, type FieldDefOpt } from '../lib/directory'
 import Comments from '../components/Comments'
 import Attachments from '../components/Attachments'
 import CustomFieldsForm from '../components/CustomFieldsForm'
 import { useNotifications } from '../lib/notifications'
 import { STATUS_OPTIONS } from '../lib/statuses'
+import { useRecurringByOrigin } from '../hooks/useTickets'
 import { filterFieldDefs, sanitizeCustomFieldValues } from '../lib/customFields'
+
+type FrequencyValue = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
+
+const FREQUENCY_OPTIONS: { value: FrequencyValue; label: string }[] = [
+  { value: 'DAILY', label: 'Daily' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'QUARTERLY', label: 'Quarterly' },
+  { value: 'YEARLY', label: 'Yearly' },
+]
 
 // User avatar component
 const UserAvatar: React.FC<{ user?: UserOpt; size?: number }> = ({ user, size = 32 }) => {
@@ -46,6 +57,17 @@ export default function TicketView() {
   const [fieldDefs, setFieldDefs] = React.useState<FieldDefOpt[]>([])
   const [history, setHistory] = React.useState<TicketHistoryEntry[]>([])
   const { showNotification } = useNotifications()
+  const { data: recurringConfig, refetch: refetchRecurring, isFetching: recurringLoading } = useRecurringByOrigin(id)
+  const [recurringEnabled, setRecurringEnabled] = React.useState(false)
+  const [recurringSaving, setRecurringSaving] = React.useState(false)
+  const [recurringError, setRecurringError] = React.useState<string | null>(null)
+  const [recurringForm, setRecurringForm] = React.useState({
+    frequency: 'MONTHLY' as FrequencyValue,
+    intervalValue: 1,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: '',
+    leadTimeDays: 7,
+  })
   
   const load = async () => {
     if (!id) return
@@ -69,6 +91,28 @@ export default function TicketView() {
       setSites(s); setUsers(u); setTypes(ty); setFieldDefs(filterFieldDefs(f))
     }).catch(e => console.error('Failed to load dropdowns', e))
   }, [id])
+  
+  React.useEffect(() => {
+    if (recurringConfig) {
+      setRecurringEnabled(recurringConfig.isActive)
+      setRecurringForm({
+        frequency: recurringConfig.frequency,
+        intervalValue: recurringConfig.intervalValue,
+        startDate: recurringConfig.startDate.slice(0, 10),
+        endDate: recurringConfig.endDate ? recurringConfig.endDate.slice(0, 10) : '',
+        leadTimeDays: recurringConfig.leadTimeDays,
+      })
+    } else {
+      setRecurringEnabled(false)
+      setRecurringForm({
+        frequency: 'MONTHLY',
+        intervalValue: 1,
+        startDate: t?.dueAt ? new Date(t.dueAt).toISOString().slice(0, 10) : new Date().toISOString().split('T')[0],
+        endDate: '',
+        leadTimeDays: 7,
+      })
+    }
+  }, [recurringConfig, t])
   
   const save = async () => {
     if (!id || !t) return
@@ -95,6 +139,54 @@ export default function TicketView() {
       setErr(e?.message || 'Failed to save')
       showNotification('error', e?.message || 'Failed to save ticket')
     } finally { setSaving(false) }
+  }
+
+  const handleRecurringSave = async () => {
+    if (!t) return
+    setRecurringSaving(true)
+    setRecurringError(null)
+    const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
+    try {
+      if (recurringConfig) {
+        await updateRecurringTicket(recurringConfig.id, {
+          frequency: recurringForm.frequency,
+          intervalValue: recurringForm.intervalValue,
+          startDate: recurringForm.startDate,
+          endDate: recurringForm.endDate || undefined,
+          leadTimeDays: recurringForm.leadTimeDays,
+          isActive: recurringEnabled,
+          description: t.description,
+          priority: t.priority,
+          details: t.details || undefined,
+          assignedUserId: t.assignedUserId || undefined,
+          customFields: sanitizedCustomFields,
+        })
+      } else if (recurringEnabled) {
+        await createRecurringTicket({
+          originTicketId: t.id,
+          siteId: t.siteId,
+          typeKey: t.typeKey,
+          description: t.description,
+          priority: t.priority,
+          frequency: recurringForm.frequency,
+          intervalValue: recurringForm.intervalValue,
+          startDate: recurringForm.startDate,
+          endDate: recurringForm.endDate || undefined,
+          leadTimeDays: recurringForm.leadTimeDays,
+          details: t.details || undefined,
+          assignedUserId: t.assignedUserId || undefined,
+          customFields: sanitizedCustomFields,
+        })
+      }
+      showNotification('success', 'Recurring schedule saved')
+      await refetchRecurring()
+    } catch (e: any) {
+      const message = e?.response?.data?.message || e?.message || 'Failed to update recurring schedule'
+      setRecurringError(message)
+      showNotification('error', message)
+    } finally {
+      setRecurringSaving(false)
+    }
   }
   if (!t) return <div className="container"><div className="panel">Loading…</div></div>
   const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
@@ -206,6 +298,114 @@ export default function TicketView() {
                 <span>{new Date(t.resolvedAt).toLocaleString()}</span>
               </div>
             )}
+          </div>
+        </div>
+
+        <div style={{marginTop:24, paddingTop:16, borderTop:'1px solid #1c2532'}}>
+          <div className="row" style={{alignItems:'center', marginBottom:12}}>
+            <div style={{fontWeight:600}}>Recurring Schedule</div>
+            <div className="spacer" />
+            <label style={{display:'flex', alignItems:'center', gap:8}}>
+              <input
+                type="checkbox"
+                checked={recurringEnabled}
+                onChange={e => {
+                  const checked = e.target.checked
+                  setRecurringEnabled(checked)
+                  if (checked && !recurringConfig) {
+                    setRecurringForm(prev => ({
+                      ...prev,
+                      startDate: new Date().toISOString().split('T')[0],
+                    }))
+                  }
+                }}
+              />
+              <span>Enable recurring schedule</span>
+            </label>
+          </div>
+          {recurringError && <div style={{ color: '#ffb3b3', marginBottom: 8 }}>{recurringError}</div>}
+          {!recurringConfig && !recurringEnabled && (
+            <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 8 }}>
+              This ticket does not currently have a recurring schedule. Enable the toggle above to configure one.
+            </div>
+          )}
+          {recurringConfig && !recurringEnabled && (
+            <div style={{ fontSize: 13, color: '#facc15', marginBottom: 8 }}>
+              The existing recurring schedule is disabled. Toggle it back on to resume automated generation.
+            </div>
+          )}
+          <div style={{display:'grid', gap:12, opacity: recurringEnabled || recurringConfig ? 1 : 0.6}}>
+            <div className="row" style={{gap:12}}>
+              <label style={{width:150}}>Frequency</label>
+              <select
+                value={recurringForm.frequency}
+                onChange={e => setRecurringForm(prev => ({ ...prev, frequency: e.target.value as FrequencyValue }))}
+                style={{flex:1}}
+                disabled={!recurringEnabled && !recurringConfig}
+              >
+                {FREQUENCY_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <label style={{width:150}}>Interval</label>
+              <input
+                type="number"
+                min={1}
+                value={recurringForm.intervalValue}
+                onChange={e => setRecurringForm(prev => ({ ...prev, intervalValue: Math.max(1, Number(e.target.value) || 1) }))}
+                style={{width:120}}
+                disabled={!recurringEnabled && !recurringConfig}
+              />
+            </div>
+            <div className="row" style={{gap:12}}>
+              <label style={{width:150}}>Start Date</label>
+              <input
+                type="date"
+                value={recurringForm.startDate}
+                onChange={e => setRecurringForm(prev => ({ ...prev, startDate: e.target.value }))}
+                style={{flex:1}}
+                disabled={!recurringEnabled && !recurringConfig}
+              />
+              <label style={{width:150}}>End Date</label>
+              <input
+                type="date"
+                value={recurringForm.endDate}
+                onChange={e => setRecurringForm(prev => ({ ...prev, endDate: e.target.value }))}
+                style={{flex:1}}
+                disabled={!recurringEnabled && !recurringConfig}
+              />
+            </div>
+            <div className="row" style={{gap:12}}>
+              <label style={{width:150}}>Lead time (days)</label>
+              <input
+                type="number"
+                min={0}
+                value={recurringForm.leadTimeDays}
+                onChange={e => setRecurringForm(prev => ({ ...prev, leadTimeDays: Math.max(0, Number(e.target.value) || 0) }))}
+                style={{width:150}}
+                disabled={!recurringEnabled && !recurringConfig}
+              />
+            </div>
+            {recurringConfig && !recurringLoading && (
+              <div style={{ fontSize: 13, color: '#64748b' }}>
+                Next ticket creation: {new Date(recurringConfig.nextScheduledAt).toLocaleString()}
+                {(() => {
+                  const dueDate = new Date(recurringConfig.nextScheduledAt)
+                  dueDate.setDate(dueDate.getDate() + recurringConfig.leadTimeDays)
+                  return ` • Due date ${dueDate.toLocaleDateString()}`
+                })()}
+                {recurringConfig.lastGeneratedAt && ` • Last generated ${new Date(recurringConfig.lastGeneratedAt).toLocaleDateString()}`}
+              </div>
+            )}
+          </div>
+          <div className="row" style={{marginTop:12, justifyContent:'flex-end'}}>
+            <button
+              onClick={handleRecurringSave}
+              disabled={recurringSaving || (!recurringEnabled && !recurringConfig)}
+              className="primary"
+            >
+              {recurringSaving ? 'Saving...' : 'Save Recurring Settings'}
+            </button>
           </div>
         </div>
         

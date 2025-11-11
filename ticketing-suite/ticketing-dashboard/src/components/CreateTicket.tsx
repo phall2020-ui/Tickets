@@ -106,6 +106,7 @@ const [recurringSettings, setRecurringSettings] = React.useState({
         try {
           await createRecurringTicket({
             siteId: formData.siteId,
+            originTicketId: ticket.id,
             typeKey: formData.type,
             description: formData.description,
             priority: formData.priority,
@@ -115,6 +116,8 @@ const [recurringSettings, setRecurringSettings] = React.useState({
             endDate: recurringSettings.endDate || undefined,
             leadTimeDays: recurringSettings.leadTimeDays,
             details: formData.details || undefined,
+            assignedUserId: formData.assignedUserId || undefined,
+            customFields: sanitizedCustomFields,
           })
         } catch (recurringError) {
           console.error('Failed to schedule recurring ticket:', recurringError)

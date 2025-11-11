@@ -13,6 +13,9 @@ export class CreateRecurringTicketDto {
   siteId!: string;
 
   @IsString()
+  originTicketId!: string;
+
+  @IsString()
   typeKey!: string;
 
   @IsString()

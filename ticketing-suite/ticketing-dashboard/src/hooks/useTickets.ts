@@ -10,6 +10,9 @@ import {
   listTickets,
   createTicket,
   listTicketHistory,
+  listRecurringTickets,
+  getRecurringTicketByOrigin,
+  type RecurringTicketConfig,
   type Comment,
   type Attachment,
   type Ticket,
@@ -23,6 +26,8 @@ export const queryKeys = {
   ticketHistory: (id: string) => ['ticketHistory', id] as const,
   comments: (ticketId: string) => ['comments', ticketId] as const,
   attachments: (ticketId: string) => ['attachments', ticketId] as const,
+  recurring: ['recurringTickets'] as const,
+  recurringByOrigin: (ticketId: string) => ['recurringByOrigin', ticketId] as const,
 }
 
 // Tickets
@@ -56,6 +61,21 @@ export const useCreateTicket = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets })
     },
+  })
+}
+
+export const useRecurringTickets = (params?: { isActive?: boolean }) => {
+  return useQuery<RecurringTicketConfig[]>({
+    queryKey: [...queryKeys.recurring, params],
+    queryFn: () => listRecurringTickets(params),
+  })
+}
+
+export const useRecurringByOrigin = (ticketId?: string) => {
+  return useQuery<RecurringTicketConfig | null>({
+    queryKey: ticketId ? queryKeys.recurringByOrigin(ticketId) : ['recurringByOrigin', 'none'],
+    queryFn: () => ticketId ? getRecurringTicketByOrigin(ticketId) : Promise.resolve(null),
+    enabled: !!ticketId,
   })
 }
 
