@@ -24,8 +24,34 @@ echo "✅ Using entry: $ENTRY"
 echo "🧬 Generating Prisma client…"
 npx prisma generate
 
+echo "🔍 Checking and resolving any failed migrations…"
+if [ -f "/app/scripts/resolve-failed-migrations.sh" ]; then
+  /app/scripts/resolve-failed-migrations.sh
+else
+  echo "⚠️  Migration resolution script not found, skipping..."
+fi
+
 echo "🗃️  Running prisma migrate deploy…"
-npx prisma migrate deploy
+npx prisma migrate deploy || {
+  EXIT_CODE=$?
+  echo "❌ Migration deploy failed with exit code $EXIT_CODE"
+  
+  # If P3009 error (failed migration), provide helpful message
+  echo ""
+  echo "💡 Troubleshooting tips:"
+  echo "   1. Check if there's a failed migration in the database"
+  echo "   2. Connect to the database and run: npx prisma migrate status"
+  echo "   3. Resolve failed migrations with: npx prisma migrate resolve"
+  echo "   4. Or set environment variable SKIP_MIGRATIONS=1 to skip migration step"
+  echo ""
+  
+  # Check if we should skip and continue anyway
+  if [ "$SKIP_MIGRATIONS" = "1" ]; then
+    echo "⚠️  SKIP_MIGRATIONS=1 is set, continuing without migrations..."
+  else
+    exit $EXIT_CODE
+  fi
+}
 
 if [ "$RUN_MIN_SEED" = "1" ]; then
   echo "Running minimal seed…"

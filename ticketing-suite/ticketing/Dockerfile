@@ -31,9 +31,12 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json ./package.json
 
+# Copy scripts directory for migration resolution
+COPY --from=build /app/scripts ./scripts
+
 # Add entrypoint that runs migrations then starts Node
 COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+RUN chmod +x /app/start.sh /app/scripts/*.sh
 
 # Wait longer before first check, and check the real health path
 #HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=5 \
