@@ -48,7 +48,6 @@ export default function TicketView() {
   const { id } = useParams()
   const nav = useNavigate()
   const [t, setT] = React.useState<any>(null)
-  const [saving, setSaving] = React.useState(false)
   const [err, setErr] = React.useState<string | null>(null)
   const [sites, setSites] = React.useState<SiteOpt[]>([])
   const [users, setUsers] = React.useState<UserOpt[]>([])
@@ -58,7 +57,6 @@ export default function TicketView() {
   const { showNotification } = useNotifications()
   const { data: recurringConfig, refetch: refetchRecurring, isFetching: recurringLoading } = useRecurringByOrigin(id)
   const [recurringEnabled, setRecurringEnabled] = React.useState(false)
-  const [recurringSaving, setRecurringSaving] = React.useState(false)
   const [recurringError, setRecurringError] = React.useState<string | null>(null)
   const [recurringForm, setRecurringForm] = React.useState({
     frequency: 'MONTHLY' as FrequencyValue,
@@ -68,17 +66,22 @@ export default function TicketView() {
     leadTimeDays: 7,
   })
   const [recurringHydrated, setRecurringHydrated] = React.useState(false)
+  const [hasChanges, setHasChanges] = React.useState(false)
+  const [initialData, setInitialData] = React.useState<any>(null)
   
   const load = async () => {
     if (!id) return
     setRecurringHydrated(false)
     try {
       const data = await getTicket(id)
-      setT({
+      const ticketData = {
         ...data,
         assignedUserId: data.assignedUserId ?? '',
         customFields: sanitizeCustomFieldValues(data.customFields)
-      })
+      }
+      setT(ticketData)
+      setInitialData(JSON.parse(JSON.stringify(ticketData)))
+      setHasChanges(false)
       const h = await listTicketHistory(id)
       setHistory(h)
     } catch (e: any) {
@@ -92,6 +95,64 @@ export default function TicketView() {
       setSites(s); setUsers(u); setTypes(ty); setFieldDefs(filterFieldDefs(f))
     }).catch(e => console.error('Failed to load dropdowns', e))
   }, [id])
+
+  // Track changes
+  React.useEffect(() => {
+    if (!t || !initialData) return
+    const changed = JSON.stringify(t) !== JSON.stringify(initialData)
+    setHasChanges(changed)
+  }, [t, initialData])
+
+  // Auto-save on unmount or navigation
+  React.useEffect(() => {
+    return () => {
+      if (hasChanges && t && id) {
+        // Save synchronously before unmount
+        const payload: any = { 
+          siteId: t.siteId,
+          type: t.typeKey,
+          description: t.description, 
+          details: t.details, 
+          status: t.status, 
+          priority: t.priority 
+        }
+        if (t.assignedUserId !== undefined) payload.assignedUserId = t.assignedUserId
+        if (t.dueAt !== undefined) payload.dueAt = t.dueAt
+        const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
+        if (Object.keys(sanitizedCustomFields).length > 0) {
+          payload.custom_fields = sanitizedCustomFields
+        }
+        updateTicket(id, payload).catch(e => console.error('Auto-save failed:', e))
+        
+        // Also save recurring settings if enabled
+        if (recurringEnabled) {
+          const recurringPayload = {
+            frequency: recurringForm.frequency,
+            intervalValue: recurringForm.intervalValue,
+            startDate: recurringForm.startDate,
+            endDate: recurringForm.endDate || undefined,
+            leadTimeDays: recurringForm.leadTimeDays,
+            isActive: recurringEnabled,
+            description: t.description,
+            priority: t.priority,
+            details: t.details || undefined,
+            assignedUserId: t.assignedUserId || undefined,
+            customFields: sanitizedCustomFields,
+          }
+          if (recurringConfig) {
+            updateRecurringTicket(recurringConfig.id, recurringPayload).catch(e => console.error('Auto-save recurring failed:', e))
+          } else {
+            createRecurringTicket({
+              originTicketId: t.id,
+              siteId: t.siteId,
+              typeKey: t.typeKey,
+              ...recurringPayload
+            }).catch(e => console.error('Auto-create recurring failed:', e))
+          }
+        }
+      }
+    }
+  }, [hasChanges, t, id, recurringEnabled, recurringForm, recurringConfig])
   
   React.useEffect(() => {
     if (!t) return
@@ -125,32 +186,7 @@ export default function TicketView() {
     }
   }, [recurringConfig, t, recurringEnabled, recurringHydrated])
   
-  const save = async () => {
-    if (!id || !t) return
-    setSaving(true); setErr(null)
-    try {
-      const payload: any = { 
-        siteId: t.siteId,
-        type: t.typeKey,
-        description: t.description, 
-        details: t.details, 
-        status: t.status, 
-        priority: t.priority 
-      }
-      if (t.assignedUserId !== undefined) payload.assignedUserId = t.assignedUserId
-      if (t.dueAt !== undefined) payload.dueAt = t.dueAt
-      const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
-      if (Object.keys(sanitizedCustomFields).length > 0) {
-        payload.custom_fields = sanitizedCustomFields
-      }
-      await updateTicket(id, payload)
-      showNotification('success', 'Ticket updated successfully')
-      await load()
-    } catch (e:any) { 
-      setErr(e?.message || 'Failed to save')
-      showNotification('error', e?.message || 'Failed to save ticket')
-    } finally { setSaving(false) }
-  }
+  // Removed manual save - now using auto-save on unmount
 
   const isRecurringActive = recurringEnabled
 
@@ -171,57 +207,7 @@ export default function TicketView() {
     })
   }, [isRecurringActive, recurringForm.startDate])
 
-  const handleRecurringSave = async () => {
-    if (!t || !id) return
-    setRecurringSaving(true)
-    setRecurringError(null)
-    const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
-    try {
-      if (recurringConfig) {
-        await updateRecurringTicket(recurringConfig.id, {
-          frequency: recurringForm.frequency,
-          intervalValue: recurringForm.intervalValue,
-          startDate: recurringForm.startDate,
-          endDate: recurringForm.endDate || undefined,
-          leadTimeDays: recurringForm.leadTimeDays,
-          isActive: recurringEnabled,
-          description: t.description,
-          priority: t.priority,
-          details: t.details || undefined,
-          assignedUserId: t.assignedUserId || undefined,
-          customFields: sanitizedCustomFields,
-        })
-      } else if (recurringEnabled) {
-        await createRecurringTicket({
-          originTicketId: t.id,
-          siteId: t.siteId,
-          typeKey: t.typeKey,
-          description: t.description,
-          priority: t.priority,
-          frequency: recurringForm.frequency,
-          intervalValue: recurringForm.intervalValue,
-          startDate: recurringForm.startDate,
-          endDate: recurringForm.endDate || undefined,
-          leadTimeDays: recurringForm.leadTimeDays,
-          details: t.details || undefined,
-          assignedUserId: t.assignedUserId || undefined,
-          customFields: sanitizedCustomFields,
-        })
-      }
-      const dueAtForUpdate = t.dueAt
-      if (isRecurringActive && dueAtForUpdate) {
-        await updateTicket(id, { dueAt: dueAtForUpdate })
-      }
-      showNotification('success', 'Recurring schedule saved')
-      await Promise.all([refetchRecurring(), load()])
-    } catch (e: any) {
-      const message = e?.response?.data?.message || e?.message || 'Failed to update recurring schedule'
-      setRecurringError(message)
-      showNotification('error', message)
-    } finally {
-      setRecurringSaving(false)
-    }
-  }
+  // Removed manual recurring save - now using auto-save on unmount
   if (!t) return <div className="container"><div className="panel">Loading…</div></div>
   const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
   return (
@@ -423,14 +409,8 @@ export default function TicketView() {
               </div>
             )}
           </div>
-          <div className="row" style={{marginTop:12, justifyContent:'flex-end'}}>
-            <button
-              onClick={handleRecurringSave}
-              disabled={recurringSaving || (!recurringEnabled && !recurringConfig)}
-              className="primary"
-            >
-              {recurringSaving ? 'Saving...' : 'Save Recurring Settings'}
-            </button>
+          <div style={{marginTop:12, fontSize:13, color:'#64748b', fontStyle:'italic'}}>
+            Changes are automatically saved when you leave this page
           </div>
         </div>
         
@@ -445,8 +425,8 @@ export default function TicketView() {
           </div>
         )}
 
-        <div className="row" style={{marginTop:16, justifyContent:'flex-end'}}>
-          <button className="primary" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Save'}</button>
+        <div style={{marginTop:16, fontSize:13, color:'#64748b', fontStyle:'italic', textAlign:'right'}}>
+          {hasChanges ? '● Unsaved changes - will auto-save when you leave' : '✓ All changes saved'}
         </div>
       </div>
       
