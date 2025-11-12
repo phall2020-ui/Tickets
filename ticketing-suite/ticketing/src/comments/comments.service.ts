@@ -38,6 +38,13 @@ export class CommentsService {
           select: { id: true, name: true, email: true },
         });
 
+        type MentionedUser = { id: string; name: string | null; email: string };
+        const normalizedUsers: MentionedUser[] = mentionedUsers.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        }));
+
         let authorDisplay = 'A teammate';
         if (authorUserId) {
           const author = await tx.user.findFirst({
@@ -47,7 +54,7 @@ export class CommentsService {
           if (author) authorDisplay = author.name || author.email || authorDisplay;
         }
 
-        const rows = mentionedUsers
+        const rows = normalizedUsers
           .filter((user) => user.id !== authorUserId)
           .map((user) => ({
             tenantId,
