@@ -153,7 +153,7 @@ export default function TicketView() {
       await Promise.all([load(), refetchRecurring()])
       
       setHasChanges(false)
-      showNotification('success', 'Changes saved')
+      // Silent auto-save - no notification needed
     } catch (e) {
       console.error('Auto-save failed:', e)
       showNotification('error', 'Failed to save changes')
@@ -220,13 +220,13 @@ export default function TicketView() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [hasChanges, performAutoSave])
 
-  // Debounced auto-save (2 seconds after changes)
+  // Debounced auto-save (500ms after changes for responsive feel)
   React.useEffect(() => {
     if (!hasChanges) return
     
     const timer = setTimeout(() => {
       performAutoSave()
-    }, 2000)
+    }, 500)
     
     return () => clearTimeout(timer)
   }, [hasChanges, t, recurringEnabled, recurringForm])
@@ -481,9 +481,6 @@ export default function TicketView() {
               </div>
             )}
           </div>
-          <div style={{marginTop:12, fontSize:13, color:'#64748b', fontStyle:'italic'}}>
-            {autoSaving ? '💾 Saving recurring settings...' : hasChanges ? 'Changes auto-save in 2 seconds' : 'Changes automatically saved'}
-          </div>
         </div>
         
         {fieldDefs.length > 0 && (
@@ -496,10 +493,6 @@ export default function TicketView() {
             />
           </div>
         )}
-
-        <div style={{marginTop:16, fontSize:13, color:'#64748b', fontStyle:'italic', textAlign:'right'}}>
-          {autoSaving ? '💾 Saving...' : hasChanges ? '● Unsaved changes - auto-saving in 2s' : '✓ All changes saved'}
-        </div>
       </div>
       
       <Comments ticketId={id!} />
