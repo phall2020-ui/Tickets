@@ -132,15 +132,15 @@ const UserAvatar: React.FC<{ user?: UserOpt; size?: number; showMargin?: boolean
 }
 
 const TABLE_COLUMN_WIDTHS = {
-  select: 40,
-  id: 70,
-  description: 250,
-  priority: 70,
-  status: 110,
-  type: 110,
-  assigned: 70,
-  site: 100,
-  due: 110
+  select: 42,
+  id: 75,
+  description: 285,
+  priority: 75,
+  status: 115,
+  type: 115,
+  assigned: 75,
+  site: 105,
+  due: 113
 } as const
 
 const TicketRow: React.FC<{
