@@ -69,6 +69,7 @@ export default function TicketView() {
   const [hasChanges, setHasChanges] = React.useState(false)
   const [initialData, setInitialData] = React.useState<any>(null)
   const [autoSaving, setAutoSaving] = React.useState(false)
+  const saveInProgressRef = React.useRef(false)
   
   const load = async () => {
     if (!id) return
@@ -99,8 +100,9 @@ export default function TicketView() {
 
   // Auto-save function
   const performAutoSave = React.useCallback(async () => {
-    if (!t || !id) return
+    if (!t || !id || saveInProgressRef.current) return
     
+    saveInProgressRef.current = true
     setAutoSaving(true)
     try {
       const payload: any = { 
@@ -149,18 +151,22 @@ export default function TicketView() {
         await updateRecurringTicket(recurringConfig.id, { isActive: false })
       }
       
-      // Reload fresh data from server
-      await Promise.all([load(), refetchRecurring()])
-      
+      // Update initial data to match current state (no reload to prevent flicker)
+      setInitialData(JSON.parse(JSON.stringify(t)))
       setHasChanges(false)
+      
+      // Refetch recurring config only (lightweight)
+      await refetchRecurring()
+      
       // Silent auto-save - no notification needed
     } catch (e) {
       console.error('Auto-save failed:', e)
       showNotification('error', 'Failed to save changes')
     } finally {
       setAutoSaving(false)
+      saveInProgressRef.current = false
     }
-  }, [t, id, recurringEnabled, recurringForm, recurringConfig, refetchRecurring, load, showNotification])
+  }, [t, id, recurringEnabled, recurringForm, recurringConfig, refetchRecurring, showNotification])
 
   // Track changes
   React.useEffect(() => {
@@ -229,7 +235,7 @@ export default function TicketView() {
     }, 500)
     
     return () => clearTimeout(timer)
-  }, [hasChanges, t, recurringEnabled, recurringForm])
+  }, [hasChanges, performAutoSave])
   
   React.useEffect(() => {
     if (!t || recurringHydrated) return
