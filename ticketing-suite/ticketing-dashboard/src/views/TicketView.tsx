@@ -68,6 +68,7 @@ export default function TicketView() {
   const [recurringHydrated, setRecurringHydrated] = React.useState(false)
   const [hasChanges, setHasChanges] = React.useState(false)
   const [initialData, setInitialData] = React.useState<any>(null)
+  const [autoSaving, setAutoSaving] = React.useState(false)
   
   const load = async () => {
     if (!id) return
@@ -96,63 +97,129 @@ export default function TicketView() {
     }).catch(e => console.error('Failed to load dropdowns', e))
   }, [id])
 
+  // Auto-save function
+  const performAutoSave = React.useCallback(async () => {
+    if (!t || !id) return
+    
+    setAutoSaving(true)
+    try {
+      const payload: any = { 
+        siteId: t.siteId,
+        type: t.typeKey,
+        description: t.description, 
+        details: t.details, 
+        status: t.status, 
+        priority: t.priority 
+      }
+      if (t.assignedUserId !== undefined) payload.assignedUserId = t.assignedUserId
+      if (t.dueAt !== undefined) payload.dueAt = t.dueAt
+      const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
+      if (Object.keys(sanitizedCustomFields).length > 0) {
+        payload.custom_fields = sanitizedCustomFields
+      }
+      await updateTicket(id, payload)
+      
+      // Save recurring settings
+      if (recurringEnabled) {
+        const recurringPayload = {
+          frequency: recurringForm.frequency,
+          intervalValue: recurringForm.intervalValue,
+          startDate: recurringForm.startDate,
+          endDate: recurringForm.endDate || undefined,
+          leadTimeDays: recurringForm.leadTimeDays,
+          isActive: true,
+          description: t.description,
+          priority: t.priority,
+          details: t.details || undefined,
+          assignedUserId: t.assignedUserId || undefined,
+          customFields: sanitizedCustomFields,
+        }
+        if (recurringConfig) {
+          await updateRecurringTicket(recurringConfig.id, recurringPayload)
+        } else {
+          await createRecurringTicket({
+            originTicketId: t.id,
+            siteId: t.siteId,
+            typeKey: t.typeKey,
+            ...recurringPayload
+          })
+        }
+      } else if (recurringConfig && !recurringEnabled) {
+        // Disable recurring if checkbox unchecked
+        await updateRecurringTicket(recurringConfig.id, { isActive: false })
+      }
+      
+      setHasChanges(false)
+      setInitialData(JSON.parse(JSON.stringify(t)))
+      await refetchRecurring()
+    } catch (e) {
+      console.error('Auto-save failed:', e)
+    } finally {
+      setAutoSaving(false)
+    }
+  }, [t, id, recurringEnabled, recurringForm, recurringConfig, refetchRecurring])
+
   // Track changes
   React.useEffect(() => {
     if (!t || !initialData) return
-    const changed = JSON.stringify(t) !== JSON.stringify(initialData)
-    setHasChanges(changed)
-  }, [t, initialData])
+    const ticketChanged = JSON.stringify(t) !== JSON.stringify(initialData)
+    const recurringChanged = recurringConfig ? 
+      (recurringEnabled !== recurringConfig.isActive || 
+       JSON.stringify(recurringForm) !== JSON.stringify({
+         frequency: recurringConfig.frequency,
+         intervalValue: recurringConfig.intervalValue,
+         startDate: recurringConfig.startDate.slice(0, 10),
+         endDate: recurringConfig.endDate ? recurringConfig.endDate.slice(0, 10) : '',
+         leadTimeDays: recurringConfig.leadTimeDays,
+       })) : recurringEnabled
+    setHasChanges(ticketChanged || recurringChanged)
+  }, [t, initialData, recurringEnabled, recurringForm, recurringConfig])
 
-  // Auto-save on unmount or navigation
+  // Auto-save on unmount
   React.useEffect(() => {
     return () => {
-      if (hasChanges && t && id) {
-        // Save synchronously before unmount
-        const payload: any = { 
-          siteId: t.siteId,
-          type: t.typeKey,
-          description: t.description, 
-          details: t.details, 
-          status: t.status, 
-          priority: t.priority 
-        }
-        if (t.assignedUserId !== undefined) payload.assignedUserId = t.assignedUserId
-        if (t.dueAt !== undefined) payload.dueAt = t.dueAt
-        const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
-        if (Object.keys(sanitizedCustomFields).length > 0) {
-          payload.custom_fields = sanitizedCustomFields
-        }
-        updateTicket(id, payload).catch(e => console.error('Auto-save failed:', e))
-        
-        // Also save recurring settings if enabled
-        if (recurringEnabled) {
-          const recurringPayload = {
-            frequency: recurringForm.frequency,
-            intervalValue: recurringForm.intervalValue,
-            startDate: recurringForm.startDate,
-            endDate: recurringForm.endDate || undefined,
-            leadTimeDays: recurringForm.leadTimeDays,
-            isActive: recurringEnabled,
-            description: t.description,
-            priority: t.priority,
-            details: t.details || undefined,
-            assignedUserId: t.assignedUserId || undefined,
-            customFields: sanitizedCustomFields,
-          }
-          if (recurringConfig) {
-            updateRecurringTicket(recurringConfig.id, recurringPayload).catch(e => console.error('Auto-save recurring failed:', e))
-          } else {
-            createRecurringTicket({
-              originTicketId: t.id,
-              siteId: t.siteId,
-              typeKey: t.typeKey,
-              ...recurringPayload
-            }).catch(e => console.error('Auto-create recurring failed:', e))
-          }
-        }
+      if (hasChanges) {
+        performAutoSave()
       }
     }
-  }, [hasChanges, t, id, recurringEnabled, recurringForm, recurringConfig])
+  }, [hasChanges, performAutoSave])
+
+  // Handle browser back button and page unload
+  React.useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        performAutoSave()
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasChanges, performAutoSave])
+
+  // Auto-save on navigation (back button)
+  React.useEffect(() => {
+    const handlePopState = () => {
+      if (hasChanges) {
+        performAutoSave()
+      }
+    }
+    
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [hasChanges, performAutoSave])
+
+  // Debounced auto-save (2 seconds after changes)
+  React.useEffect(() => {
+    if (!hasChanges) return
+    
+    const timer = setTimeout(() => {
+      performAutoSave()
+    }, 2000)
+    
+    return () => clearTimeout(timer)
+  }, [hasChanges, t, recurringEnabled, recurringForm])
   
   React.useEffect(() => {
     if (!t) return
@@ -410,7 +477,7 @@ export default function TicketView() {
             )}
           </div>
           <div style={{marginTop:12, fontSize:13, color:'#64748b', fontStyle:'italic'}}>
-            Changes are automatically saved when you leave this page
+            {autoSaving ? '💾 Saving recurring settings...' : hasChanges ? 'Changes auto-save in 2 seconds' : 'Changes automatically saved'}
           </div>
         </div>
         
@@ -426,7 +493,7 @@ export default function TicketView() {
         )}
 
         <div style={{marginTop:16, fontSize:13, color:'#64748b', fontStyle:'italic', textAlign:'right'}}>
-          {hasChanges ? '● Unsaved changes - will auto-save when you leave' : '✓ All changes saved'}
+          {autoSaving ? '💾 Saving...' : hasChanges ? '● Unsaved changes - auto-saving in 2s' : '✓ All changes saved'}
         </div>
       </div>
       
