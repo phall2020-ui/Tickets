@@ -28,30 +28,6 @@ export class RecurringTicketsController {
     return this.service.findAll(this.tenant(req), active);
   }
 
-  @Get('by-origin/:ticketId')
-  @Roles('AssetManager', 'OandM', 'Monitoring', 'Contractor', 'ADMIN', 'USER')
-  async findByOrigin(@Req() req: any, @Param('ticketId') ticketId: string) {
-    return this.service.findByOriginTicketId(this.tenant(req), ticketId);
-  }
-
-  @Get(':id')
-  @Roles('AssetManager', 'OandM', 'Monitoring', 'Contractor', 'ADMIN', 'USER')
-  async findOne(@Req() req: any, @Param('id') id: string) {
-    return this.service.findOne(this.tenant(req), id);
-  }
-
-  @Patch(':id')
-  @Roles('AssetManager', 'OandM', 'ADMIN')
-  async update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateRecurringTicketDto) {
-    return this.service.update(this.tenant(req), id, dto);
-  }
-
-  @Delete(':id')
-  @Roles('AssetManager', 'OandM', 'ADMIN')
-  async delete(@Req() req: any, @Param('id') id: string) {
-    return this.service.delete(this.tenant(req), id);
-  }
-
   @Post('process')
   @Roles('ADMIN')
   async processRecurringTickets() {
@@ -101,5 +77,29 @@ export class RecurringTicketsController {
       if (error instanceof HttpException) throw error;
       throw new HttpException(error?.message || 'Bulk group failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Get('by-origin/:ticketId')
+  @Roles('AssetManager', 'OandM', 'Monitoring', 'Contractor', 'ADMIN', 'USER')
+  async findByOrigin(@Req() req: any, @Param('ticketId') ticketId: string) {
+    return this.service.findByOriginTicketId(this.tenant(req), ticketId);
+  }
+
+  @Get(':id')
+  @Roles('AssetManager', 'OandM', 'Monitoring', 'Contractor', 'ADMIN', 'USER')
+  async findOne(@Req() req: any, @Param('id') id: string) {
+    return this.service.findOne(this.tenant(req), id);
+  }
+
+  @Patch(':id')
+  @Roles('AssetManager', 'OandM', 'ADMIN')
+  async update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateRecurringTicketDto) {
+    return this.service.update(this.tenant(req), id, dto);
+  }
+
+  @Delete(':id')
+  @Roles('AssetManager', 'OandM', 'ADMIN')
+  async delete(@Req() req: any, @Param('id') id: string) {
+    return this.service.delete(this.tenant(req), id);
   }
 }
