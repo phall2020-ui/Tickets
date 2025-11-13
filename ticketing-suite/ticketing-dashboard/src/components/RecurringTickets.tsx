@@ -137,6 +137,7 @@ export default function RecurringTickets() {
                   <th style={{ width: 160 }}>Site</th>
                   <th>Type</th>
                   <th>Assigned</th>
+                  <th>Creation Date</th>
                   <th>Due Date</th>
                   <th>Frequency</th>
                   <th>Group</th>
@@ -182,6 +183,7 @@ export default function RecurringTickets() {
                       <td className="text-modern">{site?.name || schedule.siteId}</td>
                       <td className="text-modern">{issueType?.label || schedule.typeKey.replace(/_/g, ' ')}</td>
                       <td className="text-modern">{assignedUser ? assignedUser.name || assignedUser.email : 'Unassigned'}</td>
+                      <td className="text-modern">{new Date(schedule.nextScheduledAt).toLocaleDateString()}</td>
                       <td className="text-modern">{dueDate.toLocaleDateString()}</td>
                       <td className="text-modern">{frequencyLabels[schedule.frequency] ?? schedule.frequency}</td>
                       <td className="text-modern">

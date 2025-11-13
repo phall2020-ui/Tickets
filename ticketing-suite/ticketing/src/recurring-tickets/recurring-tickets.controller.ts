@@ -60,7 +60,7 @@ export class RecurringTicketsController {
 
   @Patch('bulk-update')
   @Roles('AssetManager', 'OandM', 'ADMIN')
-  async bulkUpdate(@Req() req: any, @Body() body: { ids: string[], updates: UpdateRecurringTicketDto }) {
+  async bulkUpdate(@Req() req: any, @Body() body: { ids: string[], updates: any }) {
     return this.service.bulkUpdate(this.tenant(req), body.ids, body.updates);
   }
 
