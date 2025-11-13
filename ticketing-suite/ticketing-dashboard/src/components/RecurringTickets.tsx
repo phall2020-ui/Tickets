@@ -176,9 +176,7 @@ export default function RecurringTickets() {
         </p>
 
         {upcoming.length === 0 ? (
-          <div className="panel text-modern" style={{ background: '#0f172a', border: '1px solid #1e293b', color: '#f8fafc' }}>
-            No future activities scheduled.
-          </div>
+          <div className="panel text-modern">No future activities scheduled.</div>
         ) : (
           <>
             {Object.keys(groupedTickets.groups).length > 0 && (
@@ -222,11 +220,14 @@ export default function RecurringTickets() {
                   return (
                     <React.Fragment key={`group-${groupName}`}>
                       {/* Group Header Row */}
-                      <tr style={{ 
-                        background: '#1e293b', 
-                        fontWeight: 'bold',
-                        cursor: 'pointer'
-                      }}>
+                      <tr
+                        style={{
+                          background: '#f8fafc',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #e2e8f0',
+                        }}
+                      >
                         <td>
                           <input 
                             type="checkbox" 
@@ -252,11 +253,11 @@ export default function RecurringTickets() {
                           style={{ cursor: 'pointer' }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 16 }}>{isExpanded ? '▼' : '▶'}</span>
-                            <span style={{ background: '#5b9cff', color: 'white', padding: '4px 12px', borderRadius: 4 }}>
+                            <span style={{ fontSize: 16, color: '#475569' }}>{isExpanded ? '▼' : '▶'}</span>
+                            <span style={{ background: '#e0e7ff', color: '#1d4ed8', padding: '4px 12px', borderRadius: 6 }}>
                               {groupName}
                             </span>
-                            <span style={{ color: '#94a3b8', fontSize: 14, fontWeight: 'normal' }}>
+                            <span style={{ color: '#64748b', fontSize: 14, fontWeight: 'normal' }}>
                               ({tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'})
                             </span>
                           </div>
@@ -271,7 +272,13 @@ export default function RecurringTickets() {
                         const issueType = issueTypes.find(t => t.key === schedule.typeKey)
                         const site = sites.find(s => s.id === schedule.siteId)
                         return (
-                          <tr key={schedule.id} style={{ background: '#0f172a' }}>
+                          <tr
+                            key={schedule.id}
+                            style={{
+                              background: '#ffffff',
+                              borderBottom: '1px solid #eef2f6',
+                            }}
+                          >
                             <td>
                               <input 
                                 type="checkbox" 
@@ -307,7 +314,7 @@ export default function RecurringTickets() {
                             <td className="text-modern">{dueDate.toLocaleDateString()}</td>
                             <td className="text-modern">{frequencyLabels[schedule.frequency] ?? schedule.frequency}</td>
                             <td className="text-modern">
-                              <span style={{ background: '#5b9cff', color: 'white', padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>
+                              <span style={{ background: '#e0e7ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 6, fontSize: 12 }}>
                                 {groupName}
                               </span>
                             </td>
