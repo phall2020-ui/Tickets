@@ -58,18 +58,21 @@ export class DirectoryController {
   @Get('users')
   @Roles('ADMIN', 'USER')
   users(@Req() req: any) {
-    // Note: plainPassword field requires database migration
-    // Run: npx prisma migrate deploy
+    const isAdmin = req.user.role === 'ADMIN';
+    const select: any = { 
+      id: true, 
+      name: true, 
+      email: true, 
+      role: true, 
+      lastLoginAt: true, 
+      emailNotifications: true
+    };
+    if (isAdmin) {
+      select.plainPassword = true;
+    }
     return this.prisma.user.findMany({
       where: { tenantId: this.tenant(req) },
-      select: { 
-        id: true, 
-        name: true, 
-        email: true, 
-        role: true, 
-        lastLoginAt: true, 
-        emailNotifications: true
-      }
+      select
     });
   }
 
