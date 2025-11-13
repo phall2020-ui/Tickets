@@ -57,4 +57,22 @@ export class RecurringTicketsController {
   async processRecurringTickets() {
     return this.service.processRecurringTickets();
   }
+
+  @Patch('bulk-update')
+  @Roles('AssetManager', 'OandM', 'ADMIN')
+  async bulkUpdate(@Req() req: any, @Body() body: { ids: string[], updates: UpdateRecurringTicketDto }) {
+    return this.service.bulkUpdate(this.tenant(req), body.ids, body.updates);
+  }
+
+  @Delete('bulk-delete')
+  @Roles('AssetManager', 'OandM', 'ADMIN')
+  async bulkDelete(@Req() req: any, @Body() body: { ids: string[] }) {
+    return this.service.bulkDelete(this.tenant(req), body.ids);
+  }
+
+  @Patch('bulk-group')
+  @Roles('AssetManager', 'OandM', 'ADMIN')
+  async bulkGroup(@Req() req: any, @Body() body: { ids: string[], groupName: string }) {
+    return this.service.bulkGroup(this.tenant(req), body.ids, body.groupName);
+  }
 }

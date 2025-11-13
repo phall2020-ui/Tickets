@@ -200,4 +200,55 @@ export class RecurringTicketsService {
 
     return ticket;
   }
+
+  async bulkUpdate(tenantId: string, ids: string[], updates: UpdateRecurringTicketDto) {
+    const updateData: any = {};
+    
+    if (updates.siteId !== undefined) updateData.siteId = updates.siteId;
+    if (updates.typeKey !== undefined) updateData.typeKey = updates.typeKey;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.priority !== undefined) updateData.priority = updates.priority;
+    if (updates.details !== undefined) updateData.details = updates.details;
+    if (updates.assignedUserId !== undefined) updateData.assignedUserId = updates.assignedUserId;
+    if (updates.frequency !== undefined) updateData.frequency = updates.frequency;
+    if (updates.intervalValue !== undefined) updateData.intervalValue = updates.intervalValue;
+    if (updates.leadTimeDays !== undefined) updateData.leadTimeDays = updates.leadTimeDays;
+    if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+    if (updates.customFields !== undefined) updateData.customFields = updates.customFields;
+
+    const result = await this.prisma.recurringTicket.updateMany({
+      where: {
+        id: { in: ids },
+        tenantId,
+      },
+      data: updateData,
+    });
+
+    return { updated: result.count };
+  }
+
+  async bulkDelete(tenantId: string, ids: string[]) {
+    const result = await this.prisma.recurringTicket.deleteMany({
+      where: {
+        id: { in: ids },
+        tenantId,
+      },
+    });
+
+    return { deleted: result.count };
+  }
+
+  async bulkGroup(tenantId: string, ids: string[], groupName: string) {
+    const result = await this.prisma.recurringTicket.updateMany({
+      where: {
+        id: { in: ids },
+        tenantId,
+      },
+      data: {
+        groupName: groupName || null,
+      },
+    });
+
+    return { grouped: result.count, groupName };
+  }
 }

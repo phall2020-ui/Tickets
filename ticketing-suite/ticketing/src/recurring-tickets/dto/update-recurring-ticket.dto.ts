@@ -4,6 +4,14 @@ import { RecurrenceFrequency } from './create-recurring-ticket.dto';
 export class UpdateRecurringTicketDto {
   @IsOptional()
   @IsString()
+  siteId?: string;
+
+  @IsOptional()
+  @IsString()
+  typeKey?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()

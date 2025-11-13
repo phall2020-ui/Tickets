@@ -162,7 +162,7 @@ const [recurringSettings, setRecurringSettings] = React.useState({
       }
 
       onSuccess?.()
-      nav(`/tickets/${ticket.id}`)
+      onClose()
     } catch (error) {
       console.error('Failed to create ticket:', error)
     }

@@ -660,6 +660,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
       showNotification('success', `Updated ${ids.length} ticket${ids.length === 1 ? '' : 's'}`)
       setSelectedTicketIds(new Set())
       fetchList(true)
+      refetchRecurring()
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.message || 'Failed to update tickets'
       if (error && typeof error === 'object') {
@@ -677,6 +678,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
       showNotification('success', `Deleted ${ids.length} ticket${ids.length === 1 ? '' : 's'}`)
       setSelectedTicketIds(new Set())
       fetchList(true)
+      refetchRecurring()
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.message || 'Failed to delete tickets'
       throw new Error(Array.isArray(message) ? message.join(', ') : message)
@@ -773,7 +775,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
 
   useKeyboardShortcuts(shortcuts)
 
-  const { data: recurringSchedules = [] } = useRecurringTickets()
+  const { data: recurringSchedules = [], refetch: refetchRecurring } = useRecurringTickets()
   const recurringScheduleMap = React.useMemo(() => {
     const map = new Map<string, RecurringTicketConfig>()
     recurringSchedules.forEach(schedule => {
@@ -914,7 +916,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
               onMouseEnter={buttonHoverIn}
               onMouseLeave={buttonHoverOut}
             >
-              Future Activities
+              Future Recurring Activities
           </button>
             <button
               onClick={() => setShowAdvancedSearch(true)}
@@ -1401,6 +1403,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
           onSuccess={() => {
             setShowCreate(false)
             fetchList(true)
+            refetchRecurring()
           }}
         />
       )}

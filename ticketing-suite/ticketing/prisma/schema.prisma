@@ -267,6 +267,7 @@ model RecurringTicket {
   isActive              Boolean             @default(true)
   lastGeneratedAt       DateTime?
   nextScheduledAt       DateTime
+  groupName             String?
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
   originTicketId        String?             @unique
@@ -274,6 +275,7 @@ model RecurringTicket {
 
   @@index([tenantId, isActive, nextScheduledAt])
   @@index([tenantId, siteId])
+  @@index([tenantId, groupName])
 }
 
 enum RecurrenceFrequency {
