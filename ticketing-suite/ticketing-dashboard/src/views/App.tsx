@@ -7,6 +7,7 @@ import {
   Person as PersonIcon,
   People as PeopleIcon,
   LocationOn as LocationIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material'
 import UserRegistration from '../components/UserRegistration'
 import IssueTypeManagement from '../components/IssueTypeManagement'
@@ -47,6 +48,11 @@ export default function App() {
       open()
     }
   }, [location.pathname, navigate])
+
+  const handleLogout = React.useCallback(() => {
+    localStorage.removeItem('token')
+    navigate('/login')
+  }, [navigate])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -114,6 +120,19 @@ export default function App() {
           </Tooltip>
 
           <NotificationBell />
+          
+          <Tooltip title="Logout">
+            <Button
+              onClick={handleLogout}
+              startIcon={<LogoutIcon />}
+              size="small"
+              color="inherit"
+              sx={{ display: { xs: 'none', md: 'flex' } }}
+              aria-label="Logout"
+            >
+              Logout
+            </Button>
+          </Tooltip>
         </Toolbar>
       </AppBar>
       
