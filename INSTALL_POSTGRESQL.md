@@ -1,5 +1,7 @@
 # PostgreSQL Installation Guide
 
+**Last Updated:** 2025-11-13
+
 ## Option 1: Install via Homebrew (Recommended for macOS)
 
 ### Step 1: Install Homebrew (if not installed)
