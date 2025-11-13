@@ -1,5 +1,7 @@
 # Frontend Modernization - Documentation
 
+**Last Updated:** 2025-11-13
+
 ## Overview
 
 The ticketing dashboard frontend has been modernized with a consistent design system, improved state management, and enhanced accessibility. This document outlines the key changes and how to use the new system.
