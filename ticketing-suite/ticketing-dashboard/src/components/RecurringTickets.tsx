@@ -176,7 +176,7 @@ export default function RecurringTickets() {
         </p>
 
         {upcoming.length === 0 ? (
-          <div className="panel text-modern" style={{ background: '#0f172a', border: '1px solid #1e293b', color: '#f8fafc' }}>
+          <div className="panel text-modern">
             No future activities scheduled.
           </div>
         ) : (
@@ -223,9 +223,9 @@ export default function RecurringTickets() {
                     <React.Fragment key={`group-${groupName}`}>
                       {/* Group Header Row */}
                       <tr style={{ 
-                        background: '#1e293b', 
                         fontWeight: 'bold',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #e5e7eb'
                       }}>
                         <td>
                           <input 
@@ -271,7 +271,10 @@ export default function RecurringTickets() {
                         const issueType = issueTypes.find(t => t.key === schedule.typeKey)
                         const site = sites.find(s => s.id === schedule.siteId)
                         return (
-                          <tr key={schedule.id} style={{ background: '#0f172a' }}>
+                          <tr key={schedule.id} style={{ 
+                            backgroundColor: selectedIds.includes(schedule.id) ? 'rgba(25, 118, 210, 0.08)' : undefined,
+                            borderBottom: '1px solid #e5e7eb'
+                          }}>
                             <td>
                               <input 
                                 type="checkbox" 
@@ -326,7 +329,10 @@ export default function RecurringTickets() {
                   const issueType = issueTypes.find(t => t.key === schedule.typeKey)
                   const site = sites.find(s => s.id === schedule.siteId)
                   return (
-                    <tr key={schedule.id}>
+                    <tr key={schedule.id} style={{ 
+                      backgroundColor: selectedIds.includes(schedule.id) ? 'rgba(25, 118, 210, 0.08)' : undefined,
+                      borderBottom: '1px solid #e5e7eb'
+                    }}>
                       <td>
                         <input 
                           type="checkbox" 
