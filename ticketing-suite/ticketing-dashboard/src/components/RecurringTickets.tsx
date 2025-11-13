@@ -61,7 +61,9 @@ export default function RecurringTickets() {
       setSelectedIds([])
       refetch()
     } catch (e: any) {
-      showNotification('error', e?.response?.data?.message || 'Failed to update')
+      console.error('Bulk update error:', e)
+      const errorMsg = e?.response?.data?.message || e?.message || 'Failed to update'
+      showNotification('error', errorMsg)
     }
   }
 
@@ -73,7 +75,9 @@ export default function RecurringTickets() {
       setShowDeleteDialog(false)
       refetch()
     } catch (e: any) {
-      showNotification('error', e?.response?.data?.message || 'Failed to delete')
+      console.error('Bulk delete error:', e)
+      const errorMsg = e?.response?.data?.message || e?.message || 'Failed to delete'
+      showNotification('error', errorMsg)
     }
   }
 
@@ -90,7 +94,9 @@ export default function RecurringTickets() {
       setGroupName('')
       refetch()
     } catch (e: any) {
-      showNotification('error', e?.response?.data?.message || 'Failed to group')
+      console.error('Bulk group error:', e)
+      const errorMsg = e?.response?.data?.message || e?.message || 'Failed to group'
+      showNotification('error', errorMsg)
     }
   }
 
@@ -353,6 +359,10 @@ export default function RecurringTickets() {
                 </button>
                 <button 
                   onClick={() => {
+                    if (!selectedValue) {
+                      showNotification('error', 'Please select a status')
+                      return
+                    }
                     handleBulkUpdate({ isActive: selectedValue === 'active' })
                     setShowStatusDialog(false)
                     setSelectedValue('')
@@ -405,6 +415,10 @@ export default function RecurringTickets() {
                 </button>
                 <button 
                   onClick={() => {
+                    if (!selectedValue) {
+                      showNotification('error', 'Please select a priority')
+                      return
+                    }
                     handleBulkUpdate({ priority: selectedValue })
                     setShowPriorityDialog(false)
                     setSelectedValue('')
@@ -456,6 +470,10 @@ export default function RecurringTickets() {
                 </button>
                 <button 
                   onClick={() => {
+                    if (!selectedValue) {
+                      showNotification('error', 'Please select a user')
+                      return
+                    }
                     handleBulkUpdate({ assignedUserId: selectedValue })
                     setShowAssignDialog(false)
                     setSelectedValue('')

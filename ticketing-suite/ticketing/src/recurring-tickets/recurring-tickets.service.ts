@@ -201,7 +201,11 @@ export class RecurringTicketsService {
     return ticket;
   }
 
-  async bulkUpdate(tenantId: string, ids: string[], updates: UpdateRecurringTicketDto) {
+  async bulkUpdate(tenantId: string, ids: string[], updates: any) {
+    if (!ids || ids.length === 0) {
+      throw new Error('No IDs provided for bulk update');
+    }
+
     const updateData: any = {};
     
     if (updates.siteId !== undefined) updateData.siteId = updates.siteId;
@@ -216,6 +220,10 @@ export class RecurringTicketsService {
     if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
     if (updates.customFields !== undefined) updateData.customFields = updates.customFields;
 
+    if (Object.keys(updateData).length === 0) {
+      throw new Error('No valid update fields provided');
+    }
+
     const result = await this.prisma.recurringTicket.updateMany({
       where: {
         id: { in: ids },
@@ -228,6 +236,10 @@ export class RecurringTicketsService {
   }
 
   async bulkDelete(tenantId: string, ids: string[]) {
+    if (!ids || ids.length === 0) {
+      throw new Error('No IDs provided for bulk delete');
+    }
+
     const result = await this.prisma.recurringTicket.deleteMany({
       where: {
         id: { in: ids },
@@ -239,6 +251,10 @@ export class RecurringTicketsService {
   }
 
   async bulkGroup(tenantId: string, ids: string[], groupName: string) {
+    if (!ids || ids.length === 0) {
+      throw new Error('No IDs provided for bulk group');
+    }
+
     const result = await this.prisma.recurringTicket.updateMany({
       where: {
         id: { in: ids },

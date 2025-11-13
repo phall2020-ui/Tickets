@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { RecurringTicketsService } from './recurring-tickets.service';
 import { CreateRecurringTicketDto } from './dto/create-recurring-ticket.dto';
 import { UpdateRecurringTicketDto } from './dto/update-recurring-ticket.dto';
@@ -61,18 +61,45 @@ export class RecurringTicketsController {
   @Patch('bulk-update')
   @Roles('AssetManager', 'OandM', 'ADMIN')
   async bulkUpdate(@Req() req: any, @Body() body: { ids: string[], updates: any }) {
-    return this.service.bulkUpdate(this.tenant(req), body.ids, body.updates);
+    try {
+      if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+        throw new HttpException('Invalid or empty IDs array', HttpStatus.BAD_REQUEST);
+      }
+      if (!body.updates || typeof body.updates !== 'object') {
+        throw new HttpException('Invalid updates object', HttpStatus.BAD_REQUEST);
+      }
+      return this.service.bulkUpdate(this.tenant(req), body.ids, body.updates);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(error.message || 'Bulk update failed', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Delete('bulk-delete')
   @Roles('AssetManager', 'OandM', 'ADMIN')
   async bulkDelete(@Req() req: any, @Body() body: { ids: string[] }) {
-    return this.service.bulkDelete(this.tenant(req), body.ids);
+    try {
+      if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+        throw new HttpException('Invalid or empty IDs array', HttpStatus.BAD_REQUEST);
+      }
+      return this.service.bulkDelete(this.tenant(req), body.ids);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(error.message || 'Bulk delete failed', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Patch('bulk-group')
   @Roles('AssetManager', 'OandM', 'ADMIN')
   async bulkGroup(@Req() req: any, @Body() body: { ids: string[], groupName: string }) {
-    return this.service.bulkGroup(this.tenant(req), body.ids, body.groupName);
+    try {
+      if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+        throw new HttpException('Invalid or empty IDs array', HttpStatus.BAD_REQUEST);
+      }
+      return this.service.bulkGroup(this.tenant(req), body.ids, body.groupName);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(error.message || 'Bulk group failed', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
