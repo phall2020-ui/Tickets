@@ -1,5 +1,7 @@
 # Testing Environment Setup Guide
 
+**Last Updated:** 2025-11-13
+
 ## Overview
 
 This guide will help you set up a complete testing environment with comprehensive seed data for the ticketing system.

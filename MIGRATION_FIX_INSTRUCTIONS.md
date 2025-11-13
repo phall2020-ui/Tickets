@@ -1,5 +1,7 @@
 # Migration Fix Instructions
 
+**Last Updated:** 2025-11-13
+
 ## Problem
 The migration `20251110180000_ticket_id_sequence` failed in your production database (Neon).
 

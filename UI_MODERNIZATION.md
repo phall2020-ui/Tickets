@@ -1,5 +1,7 @@
 # UI Modernization - Migration to Material-UI v5 and React Query
 
+**Last Updated:** 2025-11-13
+
 ## Overview
 
 This document describes the UI modernization completed for the Ticketing Dashboard, migrating from custom CSS styling to Material-UI v5 and implementing React Query for optimized data fetching.
