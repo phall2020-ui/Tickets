@@ -912,7 +912,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
           <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 10, flexWrap: 'wrap', width: '100%' }}>
             <button
               onClick={() => navigate('/recurring')}
-              style={{ ...baseButtonStyle, minHeight: 44, flex: '1 1 auto', whiteSpace: 'nowrap' }}
+              style={{ ...baseButtonStyle, height: CONTROL_HEIGHT, flex: '1 1 auto', whiteSpace: 'nowrap' }}
               data-border="1px solid #d6d9dd"
               onMouseEnter={buttonHoverIn}
               onMouseLeave={buttonHoverOut}
@@ -922,7 +922,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             <button
               onClick={() => setShowFilters(!showFilters)}
               aria-label="Toggle filters"
-              style={{ ...baseButtonStyle, minHeight: 44, flex: '1 1 auto' }}
+              style={{ ...baseButtonStyle, height: CONTROL_HEIGHT, flex: '1 1 auto' }}
               data-border="1px solid #d6d9dd"
               onMouseEnter={buttonHoverIn}
               onMouseLeave={buttonHoverOut}
@@ -932,7 +932,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             <button
               onClick={() => handleExport('csv')}
               aria-label="Export to CSV"
-              style={{ ...baseButtonStyle, minHeight: 44, flex: '0 1 auto' }}
+              style={{ ...baseButtonStyle, height: CONTROL_HEIGHT, flex: '1 1 auto' }}
               data-border="1px solid #d6d9dd"
               onMouseEnter={buttonHoverIn}
               onMouseLeave={buttonHoverOut}
@@ -942,7 +942,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             <button
               onClick={() => handleExport('json')}
               aria-label="Export to JSON"
-              style={{ ...baseButtonStyle, minHeight: 44, flex: '0 1 auto' }}
+              style={{ ...baseButtonStyle, height: CONTROL_HEIGHT, flex: '1 1 auto' }}
               data-border="1px solid #d6d9dd"
               onMouseEnter={buttonHoverIn}
               onMouseLeave={buttonHoverOut}
@@ -952,8 +952,8 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
             <button
               onClick={() => fetchList(true)}
               aria-label="Refresh tickets"
-              style={{ ...primaryButtonStyle, minHeight: 44, flex: '1 1 auto' }}
-              data-border="1px solid #1d4ed8"
+              style={{ ...baseButtonStyle, height: CONTROL_HEIGHT, flex: '1 1 auto' }}
+              data-border="1px solid #d6d9dd"
               onMouseEnter={buttonHoverIn}
               onMouseLeave={buttonHoverOut}
             >
