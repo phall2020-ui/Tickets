@@ -83,7 +83,7 @@ const StatusFilter: React.FC<{ value: string; onChange: (v: string) => void }> =
     <button
       type="button"
       onClick={() => onChange('')}
-      style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}), minWidth: 44, minHeight: 44 }}
+      style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}) }}
       aria-pressed={value === ''}
     >
       All
@@ -95,7 +95,7 @@ const StatusFilter: React.FC<{ value: string; onChange: (v: string) => void }> =
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}), minWidth: 44, minHeight: 44 }}
+          style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
           aria-pressed={isActive}
         >
           {option.label}
@@ -898,7 +898,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
                       key={size}
                       type="button"
                       onClick={() => setPageSize(size)}
-                      style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}), minWidth: 44, minHeight: 44 }}
+                      style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
                       aria-pressed={isActive}
                     >
                       {size}
