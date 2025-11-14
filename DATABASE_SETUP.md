@@ -1,5 +1,7 @@
 # Database Setup Guide
 
+**Last Updated:** 2025-11-13
+
 ## Prerequisites
 
 You need PostgreSQL installed and running. Choose one of the following options:

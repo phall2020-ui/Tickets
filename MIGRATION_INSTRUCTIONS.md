@@ -1,5 +1,7 @@
 # Ticket History Feature - Migration Instructions
 
+**Last Updated:** 2025-11-13
+
 ## Running the Migration
 
 Before deploying this feature, you need to run the database migration to create the `TicketHistory` table.

@@ -1,5 +1,7 @@
 # Security Summary - Frontend Modernization
 
+**Last Updated:** 2025-11-13
+
 ## Overview
 This document summarizes the security analysis performed during the frontend modernization of the ticketing dashboard.
 
