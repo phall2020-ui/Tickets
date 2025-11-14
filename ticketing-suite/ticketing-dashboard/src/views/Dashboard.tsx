@@ -79,29 +79,31 @@ const segmentButtonActiveStyle: React.CSSProperties = {
 }
 
 const StatusFilter: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
-  <div style={{...segmentContainerStyle, flexWrap: 'wrap', width: '100%', justifyContent: 'center' }} role="group" aria-label="Filter by status">
-    <button
-      type="button"
-      onClick={() => onChange('')}
-      style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}) }}
-      aria-pressed={value === ''}
-    >
-      All
-    </button>
-    {STATUS_OPTIONS.map(option => {
-      const isActive = value === option.value
-      return (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}) }}
-          aria-pressed={isActive}
-        >
-          {option.label}
-        </button>
-      )
-    })}
+  <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+    <div style={{...segmentContainerStyle }} role="group" aria-label="Filter by status">
+      <button
+        type="button"
+        onClick={() => onChange('')}
+        style={{ ...segmentButtonStyle, ...(value === '' ? segmentButtonActiveStyle : {}), whiteSpace: 'nowrap' }}
+        aria-pressed={value === ''}
+      >
+        All
+      </button>
+      {STATUS_OPTIONS.map(option => {
+        const isActive = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            style={{ ...segmentButtonStyle, ...(isActive ? segmentButtonActiveStyle : {}), whiteSpace: 'nowrap' }}
+            aria-pressed={isActive}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
   </div>
 )
 
