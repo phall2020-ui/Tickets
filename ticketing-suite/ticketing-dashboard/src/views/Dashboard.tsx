@@ -920,16 +920,6 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
               Future Recurring
           </button>
             <button
-              onClick={() => setShowAdvancedSearch(true)}
-              aria-label="Advanced search"
-              style={{ ...baseButtonStyle, minHeight: 44, flex: '1 1 auto' }}
-              data-border="1px solid #d6d9dd"
-              onMouseEnter={buttonHoverIn}
-              onMouseLeave={buttonHoverOut}
-            >
-              Advanced
-            </button>
-            <button
               onClick={() => setShowFilters(!showFilters)}
               aria-label="Toggle filters"
               style={{ ...baseButtonStyle, minHeight: 44, flex: '1 1 auto' }}
@@ -984,7 +974,7 @@ const statsCardStyle = React.useCallback((accent: string): React.CSSProperties =
         </div>
 
         {showFilters && (
-          <div style={{padding: 'clamp(12px, 3vw, 16px)', background: '#1a1a1a', borderRadius: 8, marginBottom: 12, border: '1px solid #2a2a2a'}}>
+          <div style={{padding: 'clamp(12px, 3vw, 16px)', background: '#f8fafc', borderRadius: 8, marginBottom: 12, border: '1px solid #e2e8f0'}}>
             <div className="row" style={{marginBottom: 8, flexWrap: 'wrap', gap: 12, alignItems: 'stretch'}}>
               <div style={{display: 'flex', flexDirection: 'column', gap: 6, flex: '1 1 100%', minWidth: '100%'}}>
                 <label style={{fontSize: 12, fontWeight: 600}}>Priority</label>
