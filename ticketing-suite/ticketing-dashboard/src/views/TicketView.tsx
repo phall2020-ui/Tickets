@@ -311,13 +311,14 @@ export default function TicketView() {
   }, [isRecurringActive, recurringForm.startDate, t?.dueAt])
 
   React.useEffect(() => {
-    if (!isRecurringActive || !recurringForm.startDate) return
-    setT((prev: Ticket | null): Ticket | null => {
-      if (!prev) return prev
-      const iso = new Date(`${recurringForm.startDate}T00:00:00Z`).toISOString()
-      if (prev.dueAt === iso) return prev
-      return { ...prev, dueAt: iso }
-    })
+    if (isRecurringActive && recurringForm.startDate) {
+      setT((prev: Ticket | null): Ticket | null => {
+        if (!prev) return prev
+        const iso = new Date(`${recurringForm.startDate}T00:00:00Z`).toISOString()
+        if (prev.dueAt === iso) return prev
+        return { ...prev, dueAt: iso }
+      })
+    }
   }, [isRecurringActive, recurringForm.startDate])
 
   // Removed manual recurring save - now using auto-save on unmount
@@ -461,14 +462,14 @@ export default function TicketView() {
               The existing recurring schedule is disabled. Toggle it back on to resume automated generation.
             </div>
           )}
-          <div style={{display:'grid', gap:12, opacity: recurringEnabled || recurringConfig ? 1 : 0.6}}>
+          <div style={{display:'grid', gap:12, opacity: recurringEnabled ? 1 : 0.6}}>
             <div className="row" style={{gap:12}}>
               <label style={{width:150}}>Frequency</label>
               <select
                 value={recurringForm.frequency}
                 onChange={e => setRecurringForm(prev => ({ ...prev, frequency: e.target.value as FrequencyValue }))}
                 style={{flex:1}}
-                disabled={!recurringEnabled && !recurringConfig}
+                disabled={!recurringEnabled}
               >
                 {FREQUENCY_OPTIONS.map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -481,7 +482,7 @@ export default function TicketView() {
                 value={recurringForm.intervalValue}
                 onChange={e => setRecurringForm(prev => ({ ...prev, intervalValue: Math.max(1, Number(e.target.value) || 1) }))}
                 style={{width:120}}
-                disabled={!recurringEnabled && !recurringConfig}
+                disabled={!recurringEnabled}
               />
             </div>
             <div className="row" style={{gap:12}}>
@@ -491,7 +492,7 @@ export default function TicketView() {
                 value={recurringForm.startDate}
                 onChange={e => setRecurringForm(prev => ({ ...prev, startDate: e.target.value }))}
                 style={{flex:1}}
-                disabled={!recurringEnabled && !recurringConfig}
+                disabled={!recurringEnabled}
               />
               <label style={{width:150}}>End Date</label>
               <input
@@ -499,7 +500,7 @@ export default function TicketView() {
                 value={recurringForm.endDate}
                 onChange={e => setRecurringForm(prev => ({ ...prev, endDate: e.target.value }))}
                 style={{flex:1}}
-                disabled={!recurringEnabled && !recurringConfig}
+                disabled={!recurringEnabled}
               />
             </div>
             <div className="row" style={{gap:12}}>
@@ -510,7 +511,7 @@ export default function TicketView() {
                 value={recurringForm.leadTimeDays}
                 onChange={e => setRecurringForm(prev => ({ ...prev, leadTimeDays: Math.max(0, Number(e.target.value) || 0) }))}
                 style={{width:150}}
-                disabled={!recurringEnabled && !recurringConfig}
+                disabled={!recurringEnabled}
               />
             </div>
             {recurringConfig && !recurringLoading && (
