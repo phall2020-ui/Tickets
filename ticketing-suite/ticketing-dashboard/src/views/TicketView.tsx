@@ -434,6 +434,7 @@ export default function TicketView() {
                 checked={recurringEnabled}
                 onChange={e => {
                   const checked = e.target.checked
+                  console.log('Recurring checkbox changed to:', checked, 'priorDueDate:', priorDueDate)
                   setRecurringEnabled(checked)
                   if (checked) {
                     // Store current due date before enabling recurring
