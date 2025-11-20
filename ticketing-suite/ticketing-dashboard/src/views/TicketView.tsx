@@ -67,6 +67,7 @@ export default function TicketView() {
     leadTimeDays: 7,
   })
   const [recurringHydrated, setRecurringHydrated] = React.useState(false)
+  const [priorDueDate, setPriorDueDate] = React.useState<string | null>(null)
   const [hasChanges, setHasChanges] = React.useState(false)
   const [initialData, setInitialData] = React.useState<any>(null)
   const [autoSaving, setAutoSaving] = React.useState(false)
@@ -430,6 +431,9 @@ export default function TicketView() {
                   const checked = e.target.checked
                   setRecurringEnabled(checked)
                   if (checked) {
+                    // Store current due date before enabling recurring
+                    setPriorDueDate(t?.dueAt || null)
+                    
                     const baseDate = recurringConfig
                       ? new Date(recurringConfig.startDate)
                       : t?.dueAt
@@ -444,6 +448,12 @@ export default function TicketView() {
                       if (!prev) return prev
                       const iso = new Date(`${start}T00:00:00Z`).toISOString()
                       return { ...prev, dueAt: iso }
+                    })
+                  } else {
+                    // Restore previous due date when disabling recurring
+                    setT((prev: Ticket | null): Ticket | null => {
+                      if (!prev) return prev
+                      return { ...prev, dueAt: priorDueDate }
                     })
                   }
                 }}
