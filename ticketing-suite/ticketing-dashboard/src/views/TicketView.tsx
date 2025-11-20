@@ -441,13 +441,17 @@ export default function TicketView() {
                     // But only if it's not already a recurring date
                     const currentDueAt = t?.dueAt
                     const recurringStartDate = recurringConfig?.startDate
+                    console.log('Checking recurring - currentDueAt:', currentDueAt, 'recurringStartDate:', recurringStartDate)
                     const isCurrentlyRecurringDate = currentDueAt && recurringStartDate && 
                       new Date(currentDueAt).toISOString().split('T')[0] === recurringStartDate.split('T')[0]
+                    console.log('isCurrentlyRecurringDate:', isCurrentlyRecurringDate)
                     
                     if (!isCurrentlyRecurringDate) {
+                      console.log('Storing prior date:', currentDueAt)
                       setPriorDueDate(currentDueAt || null)
                     } else {
                       // Current date is the recurring date, don't store it
+                      console.log('Not storing prior date (is recurring date)')
                       setPriorDueDate(null)
                     }
                     
