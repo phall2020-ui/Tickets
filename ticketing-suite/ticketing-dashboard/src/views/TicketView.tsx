@@ -480,11 +480,12 @@ export default function TicketView() {
             </div>
           )}
           {recurringConfig && !recurringEnabled && (
-            <div style={{ fontSize: 13, color: '#facc15', marginBottom: 8 }}>
-              The existing recurring schedule is disabled. Toggle it back on to resume automated generation.
+            <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 8 }}>
+              This ticket previously had a recurring schedule. Enable the toggle above to create a new schedule.
             </div>
           )}
-          <div style={{display:'grid', gap:12, opacity: recurringEnabled ? 1 : 0.6}}>
+          {recurringEnabled && (
+          <div style={{display:'grid', gap:12}}>
             <div className="row" style={{gap:12}}>
               <label style={{width:150}}>Frequency</label>
               <select
@@ -536,7 +537,7 @@ export default function TicketView() {
                 disabled={!recurringEnabled}
               />
             </div>
-            {recurringConfig && !recurringLoading && (
+            {recurringConfig && recurringEnabled && !recurringLoading && (
               <div style={{ fontSize: 13, color: '#64748b' }}>
                 Next ticket creation: {new Date(recurringConfig.nextScheduledAt).toLocaleString()}
                 {(() => {
@@ -548,6 +549,7 @@ export default function TicketView() {
               </div>
             )}
           </div>
+          )}
         </div>
         
         {fieldDefs.length > 0 && (
