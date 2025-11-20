@@ -389,9 +389,12 @@ export default function TicketView() {
             value={derivedDueDate ? derivedDueDate.toISOString().slice(0, 16) : ''} 
             onChange={e => {
               if (isRecurringActive) return
+              console.log('Due date field changed to:', e.target.value)
               setT((prev: Ticket | null): Ticket | null => {
                 if (!prev) return prev
-                return { ...prev, dueAt: e.target.value ? new Date(e.target.value).toISOString() : null }
+                const newDueAt = e.target.value ? new Date(e.target.value).toISOString() : null
+                console.log('Setting dueAt from field to:', newDueAt)
+                return { ...prev, dueAt: newDueAt }
               })
             }} 
             style={{flex:1, opacity: isRecurringActive ? 0.5 : 1, cursor: isRecurringActive ? 'not-allowed' : 'text'}}
