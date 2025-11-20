@@ -285,6 +285,9 @@ export default function TicketView() {
         endDate: recurringConfig.endDate ? recurringConfig.endDate.slice(0, 10) : '',
         leadTimeDays: recurringConfig.leadTimeDays,
       })
+      // For existing recurring tickets, we don't have a prior date
+      // So we'll clear the due date when recurring is disabled
+      setPriorDueDate(null)
     } else {
       setRecurringEnabled(false)
       const baseStart = t.dueAt ? new Date(t.dueAt) : new Date()
@@ -451,10 +454,15 @@ export default function TicketView() {
                     })
                   } else {
                     // Restore previous due date when disabling recurring
+                    // If no prior date stored (existing recurring ticket), clear the due date
                     setT((prev: Ticket | null): Ticket | null => {
                       if (!prev) return prev
-                      return { ...prev, dueAt: priorDueDate }
+                      // If we have a stored prior date, use it
+                      // Otherwise, clear the due date so user can set a new one
+                      return { ...prev, dueAt: priorDueDate !== null ? priorDueDate : null }
                     })
+                    // Reset the stored prior date
+                    setPriorDueDate(null)
                   }
                 }}
               />
