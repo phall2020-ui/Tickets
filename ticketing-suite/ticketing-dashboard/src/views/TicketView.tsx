@@ -438,10 +438,17 @@ export default function TicketView() {
                   setRecurringEnabled(checked)
                   if (checked) {
                     // Store current due date before enabling recurring
-                    // But only if this ticket doesn't already have an active recurring config
-                    // (otherwise we'd be storing the recurring date itself)
-                    if (!recurringConfig || !recurringConfig.isActive) {
-                      setPriorDueDate(t?.dueAt || null)
+                    // But only if it's not already a recurring date
+                    const currentDueAt = t?.dueAt
+                    const recurringStartDate = recurringConfig?.startDate
+                    const isCurrentlyRecurringDate = currentDueAt && recurringStartDate && 
+                      new Date(currentDueAt).toISOString().split('T')[0] === recurringStartDate.split('T')[0]
+                    
+                    if (!isCurrentlyRecurringDate) {
+                      setPriorDueDate(currentDueAt || null)
+                    } else {
+                      // Current date is the recurring date, don't store it
+                      setPriorDueDate(null)
                     }
                     
                     const baseDate = recurringConfig
