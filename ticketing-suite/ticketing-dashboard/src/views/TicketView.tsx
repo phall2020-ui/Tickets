@@ -124,6 +124,7 @@ export default function TicketView() {
       if (Object.keys(sanitizedCustomFields).length > 0) {
         payload.custom_fields = sanitizedCustomFields
       }
+      console.log('Auto-saving ticket with dueAt:', payload.dueAt)
       await updateTicket(id, payload)
       
       // Save recurring settings
@@ -464,7 +465,9 @@ export default function TicketView() {
                       if (!prev) return prev
                       // If we have a stored prior date, use it
                       // Otherwise, clear the due date so user can set a new one
-                      return { ...prev, dueAt: priorDueDate !== null ? priorDueDate : null }
+                      const newDueAt = priorDueDate !== null ? priorDueDate : null
+                      console.log('Unchecking recurring, setting dueAt to:', newDueAt)
+                      return { ...prev, dueAt: newDueAt }
                     })
                     // Reset the stored prior date
                     setPriorDueDate(null)
