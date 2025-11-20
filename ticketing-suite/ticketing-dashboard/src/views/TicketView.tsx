@@ -85,6 +85,7 @@ export default function TicketView() {
         assignedUserId: data.assignedUserId ?? '',
         customFields: sanitizeCustomFieldValues(data.customFields)
       }
+      console.log('Loaded ticket with dueAt:', ticketData.dueAt)
       setT(ticketData)
       setInitialData(JSON.parse(JSON.stringify(ticketData)))
       setHasChanges(false)
