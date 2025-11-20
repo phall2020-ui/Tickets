@@ -124,7 +124,6 @@ export default function TicketView() {
       if (Object.keys(sanitizedCustomFields).length > 0) {
         payload.custom_fields = sanitizedCustomFields
       }
-      console.log('Auto-saving ticket with dueAt:', payload.dueAt)
       await updateTicket(id, payload)
       
       // Save recurring settings
@@ -389,12 +388,9 @@ export default function TicketView() {
             value={derivedDueDate ? derivedDueDate.toISOString().slice(0, 16) : ''} 
             onChange={e => {
               if (isRecurringActive) return
-              console.log('Due date field changed to:', e.target.value)
               setT((prev: Ticket | null): Ticket | null => {
                 if (!prev) return prev
-                const newDueAt = e.target.value ? new Date(e.target.value).toISOString() : null
-                console.log('Setting dueAt from field to:', newDueAt)
-                return { ...prev, dueAt: newDueAt }
+                return { ...prev, dueAt: e.target.value ? new Date(e.target.value).toISOString() : null }
               })
             }} 
             style={{flex:1, opacity: isRecurringActive ? 0.5 : 1, cursor: isRecurringActive ? 'not-allowed' : 'text'}}
@@ -437,17 +433,14 @@ export default function TicketView() {
                 checked={recurringEnabled}
                 onChange={e => {
                   const checked = e.target.checked
-                  console.log('Recurring checkbox changed to:', checked, 'priorDueDate:', priorDueDate)
                   setRecurringEnabled(checked)
                   if (checked) {
                     // Store current due date before enabling recurring
                     // But only if there's no existing recurring config
                     // (if there is, the user is re-enabling an old recurring, so don't store)
                     if (!recurringConfig) {
-                      console.log('Storing prior date:', t?.dueAt)
                       setPriorDueDate(t?.dueAt || null)
                     } else {
-                      console.log('Not storing prior date (recurring config exists)')
                       setPriorDueDate(null)
                     }
                     
@@ -470,7 +463,6 @@ export default function TicketView() {
                     // Restore previous due date when disabling recurring
                     // If no prior date stored (existing recurring ticket), clear the due date
                     const newDueAt = priorDueDate !== null ? priorDueDate : null
-                    console.log('Unchecking recurring, setting dueAt to:', newDueAt)
                     
                     setT((prev: Ticket | null): Ticket | null => {
                       if (!prev) return prev
