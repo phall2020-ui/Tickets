@@ -55,6 +55,7 @@ export default function TicketView() {
   const [types, setTypes] = React.useState<IssueTypeOpt[]>([])
   const [fieldDefs, setFieldDefs] = React.useState<FieldDefOpt[]>([])
   const [history, setHistory] = React.useState<TicketHistoryEntry[]>([])
+  const [historyExpanded, setHistoryExpanded] = React.useState(false)
   const { showNotification } = useNotifications()
   const { data: recurringConfig, refetch: refetchRecurring, isFetching: recurringLoading } = useRecurringByOrigin(id)
   const [recurringEnabled, setRecurringEnabled] = React.useState(false)
@@ -569,42 +570,62 @@ export default function TicketView() {
       
       <Comments ticketId={id!} />
       <div className="panel text-modern" style={{padding:16, marginTop:12}}>
-        <div style={{fontWeight:700, marginBottom:8}}>Update history</div>
-        {history.length === 0 ? (
-          <div className="subtle">No updates yet.</div>
-        ) : (
-          <div style={{display:'grid', gap:12}}>
-            {history.map(h => {
-              const actorUser = users.find(u => u.id === h.actorUserId)
-              return (
-                <div
-                  key={h.id}
-                  className="bar"
-                  style={{
-                    display:'grid',
-                    gap:6,
-                    padding:12,
-                    background:'#ffffff',
-                    borderRadius:6,
-                    border: '1px solid #e3e8ef',
-                    boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04)'
-                  }}
-                >
-                  <div className="row" style={{alignItems: 'center'}}>
-                    <UserAvatar user={actorUser} size={24} />
-                    <div className="subtle">
-                      {new Date(h.at).toLocaleString()} · {actorUser ? (actorUser.name || actorUser.email) : (h.actorUserId || 'System')}
+        <div 
+          style={{
+            fontWeight:700, 
+            marginBottom: historyExpanded ? 8 : 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            userSelect: 'none'
+          }}
+          onClick={() => setHistoryExpanded(!historyExpanded)}
+        >
+          <span>Update history {history.length > 0 && `(${history.length})`}</span>
+          <span style={{fontSize: 20, transition: 'transform 0.2s', transform: historyExpanded ? 'rotate(180deg)' : 'rotate(0deg)'}}>
+            ▼
+          </span>
+        </div>
+        {historyExpanded && (
+          <>
+            {history.length === 0 ? (
+              <div className="subtle" style={{marginTop: 8}}>No updates yet.</div>
+            ) : (
+              <div style={{display:'grid', gap:12, marginTop: 8}}>
+                {history.map(h => {
+                  const actorUser = users.find(u => u.id === h.actorUserId)
+                  return (
+                    <div
+                      key={h.id}
+                      className="bar"
+                      style={{
+                        display:'grid',
+                        gap:6,
+                        padding:12,
+                        background:'#ffffff',
+                        borderRadius:6,
+                        border: '1px solid #e3e8ef',
+                        boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04)'
+                      }}
+                    >
+                      <div className="row" style={{alignItems: 'center'}}>
+                        <UserAvatar user={actorUser} size={24} />
+                        <div className="subtle">
+                          {new Date(h.at).toLocaleString()} · {actorUser ? (actorUser.name || actorUser.email) : (h.actorUserId || 'System')}
+                        </div>
+                      </div>
+                      <ul style={{margin:0, paddingLeft:18}}>
+                        {Object.entries(h.changes).map(([k, v]) => (
+                          <li key={k}><strong>{k}</strong>: {String(v.from ?? '—')} → {String(v.to ?? '—')}</li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
-                  <ul style={{margin:0, paddingLeft:18}}>
-                    {Object.entries(h.changes).map(([k, v]) => (
-                      <li key={k}><strong>{k}</strong>: {String(v.from ?? '—')} → {String(v.to ?? '—')}</li>
-                    ))}
-                  </ul>
-                </div>
-              )
-            })}
-          </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
       <div className="panel text-modern" style={{padding:16, marginTop:12}}>
