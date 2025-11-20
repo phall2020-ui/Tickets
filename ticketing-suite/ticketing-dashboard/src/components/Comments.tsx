@@ -40,6 +40,7 @@ export default function Comments({ ticketId }: CommentsProps) {
   const [mentionState, setMentionState] = React.useState<{ start: number; end: number; query: string } | null>(null)
   const [mentionLookup, setMentionLookup] = React.useState<Map<string, string>>(() => new Map())
   const [mentionHighlight, setMentionHighlight] = React.useState(0)
+  const [commentsExpanded, setCommentsExpanded] = React.useState(false)
   const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null)
 
   const mentionSuggestions = React.useMemo(() => {
@@ -226,23 +227,40 @@ export default function Comments({ ticketId }: CommentsProps) {
   return (
     <Card sx={{ mt: 2 }}>
       <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Comments ({comments.length})
-        </Typography>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            userSelect: 'none',
+            marginBottom: commentsExpanded ? 16 : 0
+          }}
+          onClick={() => setCommentsExpanded(!commentsExpanded)}
+        >
+          <Typography variant="h6">
+            Comments ({comments.length})
+          </Typography>
+          <span style={{fontSize: 20, transition: 'transform 0.2s', transform: commentsExpanded ? 'rotate(180deg)' : 'rotate(0deg)'}}>
+            ▼
+          </span>
+        </div>
         
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error instanceof Error ? error.message : 'Failed to load comments'}
-          </Alert>
-        )}
+        {commentsExpanded && (
+          <>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error instanceof Error ? error.message : 'Failed to load comments'}
+              </Alert>
+            )}
 
-      {isLoading ? (
-        <div className="muted">Loading comments...</div>
-      ) : comments.length === 0 ? (
-        <div className="muted">No comments yet.</div>
-      ) : (
-        <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
-          {comments.map(comment => (
+            {isLoading ? (
+              <div className="muted">Loading comments...</div>
+            ) : comments.length === 0 ? (
+              <div className="muted">No comments yet.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+                {comments.map(comment => (
             <div
               key={comment.id}
               style={{
@@ -311,7 +329,7 @@ export default function Comments({ ticketId }: CommentsProps) {
         </div>
       )}
 
-        <Box component="form" onSubmit={handleSubmit}>
+            <Box component="form" onSubmit={handleSubmit}>
           <div style={{ position: 'relative' }}>
             <TextField
               fullWidth
@@ -406,6 +424,8 @@ export default function Comments({ ticketId }: CommentsProps) {
             {addCommentMutation.isPending ? 'Adding Comment...' : 'Add Comment'}
           </Button>
         </Box>
+          </>
+        )}
       </CardContent>
     </Card>
   )
