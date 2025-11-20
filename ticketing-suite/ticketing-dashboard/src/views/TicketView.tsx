@@ -462,18 +462,15 @@ export default function TicketView() {
                   } else {
                     // Restore previous due date when disabling recurring
                     // If no prior date stored (existing recurring ticket), clear the due date
+                    const newDueAt = priorDueDate !== null ? priorDueDate : null
+                    console.log('Unchecking recurring, setting dueAt to:', newDueAt)
+                    
                     setT((prev: Ticket | null): Ticket | null => {
                       if (!prev) return prev
-                      // If we have a stored prior date, use it
-                      // Otherwise, clear the due date so user can set a new one
-                      const newDueAt = priorDueDate !== null ? priorDueDate : null
-                      console.log('Unchecking recurring, setting dueAt to:', newDueAt)
                       return { ...prev, dueAt: newDueAt }
                     })
                     // Reset the stored prior date
                     setPriorDueDate(null)
-                    // Trigger immediate save to update the dashboard
-                    setTimeout(() => performAutoSave(), 100)
                   }
                 }}
               />
