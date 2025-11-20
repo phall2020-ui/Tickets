@@ -455,11 +455,14 @@ export default function TicketView() {
                   } else {
                     // Restore previous due date when disabling recurring
                     // If no prior date stored (existing recurring ticket), clear the due date
+                    console.log('Disabling recurring, priorDueDate:', priorDueDate)
                     setT((prev: Ticket | null): Ticket | null => {
                       if (!prev) return prev
                       // If we have a stored prior date, use it
                       // Otherwise, clear the due date so user can set a new one
-                      return { ...prev, dueAt: priorDueDate !== null ? priorDueDate : null }
+                      const newDueAt = priorDueDate !== null ? priorDueDate : null
+                      console.log('Setting dueAt to:', newDueAt)
+                      return { ...prev, dueAt: newDueAt }
                     })
                     // Reset the stored prior date
                     setPriorDueDate(null)
