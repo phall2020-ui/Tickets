@@ -168,7 +168,8 @@ const TicketRow: React.FC<{
 
   // RAG color coding for due dates
   const effectiveDueDate = React.useMemo(() => {
-    if (recurringSchedule) {
+    // Only use recurring schedule date if it's actually active
+    if (recurringSchedule && recurringSchedule.isActive) {
       const due = new Date(recurringSchedule.nextScheduledAt)
       due.setDate(due.getDate() + recurringSchedule.leadTimeDays)
       return due

@@ -85,7 +85,6 @@ export default function TicketView() {
         assignedUserId: data.assignedUserId ?? '',
         customFields: sanitizeCustomFieldValues(data.customFields)
       }
-      console.log('Loaded ticket with dueAt:', ticketData.dueAt)
       setT(ticketData)
       setInitialData(JSON.parse(JSON.stringify(ticketData)))
       setHasChanges(false)
@@ -279,7 +278,6 @@ export default function TicketView() {
     if (!t || recurringHydrated) return
 
     if (recurringConfig) {
-      console.log('Loading recurring config - isActive:', recurringConfig.isActive, 'startDate:', recurringConfig.startDate)
       setRecurringEnabled(recurringConfig.isActive)
       setRecurringForm({
         frequency: recurringConfig.frequency,
@@ -319,11 +317,9 @@ export default function TicketView() {
 
   React.useEffect(() => {
     if (isRecurringActive && recurringForm.startDate) {
-      console.log('Recurring is active, setting dueAt to recurring start date:', recurringForm.startDate)
       setT((prev: Ticket | null): Ticket | null => {
         if (!prev) return prev
         const iso = new Date(`${recurringForm.startDate}T00:00:00Z`).toISOString()
-        console.log('Current dueAt:', prev.dueAt, 'New dueAt:', iso)
         if (prev.dueAt === iso) return prev
         return { ...prev, dueAt: iso }
       })
