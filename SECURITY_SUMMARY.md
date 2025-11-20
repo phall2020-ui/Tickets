@@ -1,5 +1,7 @@
 # Security Summary
 
+**Last Updated:** 2025-11-13
+
 ## Overview
 This document summarizes the security measures implemented in the authentication and authorization system.
 
