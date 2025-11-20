@@ -118,7 +118,8 @@ export default function TicketView() {
         priority: t.priority 
       }
       if (t.assignedUserId !== undefined) payload.assignedUserId = t.assignedUserId
-      if (t.dueAt !== undefined) payload.dueAt = t.dueAt
+      // Always include dueAt in payload (even if null) to allow clearing it
+      payload.dueAt = t.dueAt
       const sanitizedCustomFields = sanitizeCustomFieldValues(t.customFields)
       if (Object.keys(sanitizedCustomFields).length > 0) {
         payload.custom_fields = sanitizedCustomFields
@@ -467,6 +468,8 @@ export default function TicketView() {
                     })
                     // Reset the stored prior date
                     setPriorDueDate(null)
+                    // Trigger immediate save to update the dashboard
+                    setTimeout(() => performAutoSave(), 100)
                   }
                 }}
               />
