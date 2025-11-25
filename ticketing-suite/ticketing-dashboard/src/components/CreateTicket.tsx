@@ -165,6 +165,7 @@ const [recurringSettings, setRecurringSettings] = React.useState({
       onClose()
     } catch (error: any) {
       console.error('Failed to create ticket:', error)
+      console.error('Error response data:', error?.response?.data)
       const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error'
       alert(`Failed to create ticket: ${errorMsg}`)
     }
