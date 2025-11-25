@@ -77,7 +77,8 @@ export class TicketsService {
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && 
             error.code === 'P2002' && 
-            error.meta?.target?.includes('id') &&
+            Array.isArray(error.meta?.target) &&
+            error.meta.target.includes('id') &&
             attempt < 2) {
           console.warn(`Ticket ID collision detected, retrying (attempt ${attempt + 1})...`);
           continue;
@@ -170,6 +171,7 @@ export class TicketsService {
       }
       
       return t;
+    });
   }
 
   async list(tenantId: string, q: {
