@@ -68,7 +68,31 @@ export class TicketsService {
     status: TicketStatus; priority: TicketPriority; details?: string; assignedUserId?: string;
     custom_fields?: Record<string, unknown>; dueAt?: string | null;
   }) {
-    return this.prisma.withTenant(tenantId, async (tx) => {
+    // Retry up to 3 times if we hit a unique constraint error on ticket ID
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await this.prisma.withTenant(tenantId, async (tx) => {
+          return await this.createTicketInTransaction(tx, tenantId, dto);
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && 
+            error.code === 'P2002' && 
+            error.meta?.target?.includes('id') &&
+            attempt < 2) {
+          console.warn(`Ticket ID collision detected, retrying (attempt ${attempt + 1})...`);
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Failed to create ticket after 3 attempts');
+  }
+
+  private async createTicketInTransaction(tx: any, tenantId: string, dto: {
+    siteId: string; type: string; description: string;
+    status: TicketStatus; priority: TicketPriority; details?: string; assignedUserId?: string;
+    custom_fields?: Record<string, unknown>; dueAt?: string | null;
+  }) {
       const site = await tx.site.findFirst({ where: { id: dto.siteId, tenantId }});
       if (!site) throw new BadRequestException('Invalid siteId for tenant');
       
@@ -146,7 +170,6 @@ export class TicketsService {
       }
       
       return t;
-    });
   }
 
   async list(tenantId: string, q: {
@@ -194,7 +217,6 @@ export class TicketsService {
       const t = await tx.ticket.findFirst({ where: { id, tenantId }});
       if (!t) throw new NotFoundException();
       return t;
-    });
   }
 
   private async applyUpdate(
