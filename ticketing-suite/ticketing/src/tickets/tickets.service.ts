@@ -171,7 +171,6 @@ export class TicketsService {
       }
       
       return t;
-    });
   }
 
   async list(tenantId: string, q: {
@@ -219,6 +218,7 @@ export class TicketsService {
       const t = await tx.ticket.findFirst({ where: { id, tenantId }});
       if (!t) throw new NotFoundException();
       return t;
+    });
   }
 
   private async applyUpdate(
@@ -349,12 +349,21 @@ export class TicketsService {
     });
   }
 
-  async bulkUpdate(tenantId: string, ids: string[], patch: Partial<{
-    siteId: string; type: string; description: string;
-    status: TicketStatus; priority: TicketPriority; details?: string; assignedUserId?: string | null;
-    dueAt?: string | null;
-    custom_fields: Record<string, unknown>;
-  }>) {
+  async bulkUpdate(
+    tenantId: string,
+    ids: string[],
+    patch: Partial<{
+      siteId: string;
+      type: string;
+      description: string;
+      status: TicketStatus;
+      priority: TicketPriority;
+      details?: string;
+      assignedUserId?: string | null;
+      dueAt?: string | null;
+      custom_fields: Record<string, unknown>;
+    }>
+  ) {
     if (!ids || ids.length === 0) return [];
     return this.prisma.withTenant(tenantId, async (tx) => {
       const results = [];
