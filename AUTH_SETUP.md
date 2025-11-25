@@ -1,5 +1,7 @@
 # Authentication & Authorization Setup
 
+**Last Updated:** 2025-11-13
+
 This document describes the authentication and authorization system added to the Ticketing Suite.
 
 ## Overview

@@ -1,5 +1,7 @@
 # Security Summary
 
+**Last Updated:** 2025-11-13
+
 ## Overview
 This document summarizes the security considerations and measures taken during the implementation of frontend-backend gap fixes.
 
