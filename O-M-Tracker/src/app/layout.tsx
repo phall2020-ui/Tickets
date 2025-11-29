@@ -14,12 +14,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
-        <div className="flex h-screen">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      </head>
+      <body>
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
           <Sidebar />
-          <main className="flex-1 overflow-auto bg-gray-50">
-            {children}
-          </main>
+          {children}
         </div>
       </body>
     </html>

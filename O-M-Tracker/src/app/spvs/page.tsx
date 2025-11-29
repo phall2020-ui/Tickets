@@ -1,10 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Header } from '@/components/layout/Header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { formatCurrency, formatNumber } from '@/lib/calculations';
 import { Building, Zap, PoundSterling, FileText, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -51,132 +47,106 @@ export default function SpvsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="main-content flex items-center justify-center" style={{ height: '100vh' }}>
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <Header 
-        title="SPV Portfolio" 
-        subtitle="Special Purpose Vehicle breakdown and invoicing"
-      />
-      
-      <div className="flex-1 p-6 space-y-6">
+    <div className="main-content">
+      {/* Header */}
+      <div className="page-header">
+        <h1>SPV Portfolio</h1>
+        <p>Special Purpose Vehicle breakdown and invoicing</p>
+      </div>
+
+      <div className="content" style={{ padding: '24px 32px' }}>
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
-                Total SPVs
-              </CardTitle>
-              <Building className="h-5 w-5 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{spvs.length}</div>
-              <p className="text-sm text-gray-500 mt-1">
-                {totalSites} sites total
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
-                Total Capacity
-              </CardTitle>
-              <Zap className="h-5 w-5 text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {formatNumber(totalCapacity / 1000, 1)} MW
+        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '24px' }}>
+          <div className="card stat-card-blue">
+            <div className="card-header">
+              <span className="card-title">Total SPVs</span>
+              <div className="card-icon blue">
+                <Building className="h-5 w-5 text-blue-600" />
               </div>
-              <p className="text-sm text-gray-500 mt-1">
-                Across all SPVs
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="card-value">{spvs.length}</div>
+            <div className="card-sub">{totalSites} sites total</div>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
-                Monthly Revenue
-              </CardTitle>
-              <PoundSterling className="h-5 w-5 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {formatCurrency(totalRevenue)}
+          <div className="card stat-card-amber">
+            <div className="card-header">
+              <span className="card-title">Total Capacity</span>
+              <div className="card-icon amber">
+                <Zap className="h-5 w-5 text-amber-600" />
               </div>
-              <p className="text-sm text-gray-500 mt-1">
-                From contracted sites
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="card-value">{formatNumber(totalCapacity / 1000, 1)} MW</div>
+            <div className="card-sub">Across all SPVs</div>
+          </div>
+
+          <div className="card stat-card-green">
+            <div className="card-header">
+              <span className="card-title">Monthly Revenue</span>
+              <div className="card-icon green">
+                <PoundSterling className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+            <div className="card-value">{formatCurrency(totalRevenue)}</div>
+            <div className="card-sub">From contracted sites</div>
+          </div>
         </div>
 
         {/* SPV Cards Grid */}
         {error ? (
-          <div className="rounded-lg bg-red-50 p-4 text-red-700">
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px', color: '#dc2626' }}>
             {error}
           </div>
         ) : spvs.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Building className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No SPV data</h3>
-              <p className="text-gray-500 mt-1">
-                Import sites with SPV assignments to see data here.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="chart-card" style={{ textAlign: 'center', padding: '48px' }}>
+            <Building className="h-12 w-12 mx-auto" style={{ color: '#d1d5db', marginBottom: '16px' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>No SPV data</h3>
+            <p style={{ color: 'var(--text-muted)' }}>
+              Import sites with SPV assignments to see data here.
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="spv-grid">
             {spvs.map((spv) => (
-              <Card key={spv.code} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="info" className="text-sm">
-                      {spv.code}
-                    </Badge>
-                    <Link href={`/spvs/${spv.code}`}>
-                      <Button variant="ghost" size="sm">
-                        <FileText className="h-4 w-4 mr-1" />
-                        Invoice
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </Link>
-                  </div>
-                  <CardTitle className="text-lg mt-2">{spv.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Sites</p>
-                      <p className="text-xl font-semibold">
-                        {spv.siteCount}
-                        <span className="text-sm font-normal text-gray-400 ml-1">
-                          ({spv.contractedCount} contracted)
-                        </span>
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Capacity</p>
-                      <p className="text-xl font-semibold">
-                        {formatNumber(spv.totalCapacityKwp / 1000, 2)} MW
-                      </p>
-                    </div>
-                    <div className="col-span-2 pt-3 border-t">
-                      <p className="text-sm text-gray-500">Monthly Revenue</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {formatCurrency(spv.monthlyRevenue)}
-                      </p>
+              <div key={spv.code} className="spv-card">
+                <div className="spv-header">
+                  <span className="spv-code">{spv.code}</span>
+                  <Link href={`/spvs/${spv.code}`}>
+                    <button style={{ padding: '6px 12px', background: 'white', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <FileText className="h-4 w-4" />
+                      Invoice
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </Link>
+                </div>
+                <div className="spv-name">{spv.name}</div>
+                
+                <div className="spv-stats">
+                  <div>
+                    <div className="spv-stat-label">Sites</div>
+                    <div className="spv-stat-value">
+                      {spv.siteCount}
+                      <span style={{ fontSize: '14px', fontWeight: 'normal', color: 'var(--text-muted)', marginLeft: '4px' }}>
+                        ({spv.contractedCount} contracted)
+                      </span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <div className="spv-stat-label">Capacity</div>
+                    <div className="spv-stat-value">{formatNumber(spv.totalCapacityKwp / 1000, 2)} MW</div>
+                  </div>
+                  <div className="spv-revenue">
+                    <div className="spv-stat-label">Monthly Revenue</div>
+                    <div className="spv-stat-value">{formatCurrency(spv.monthlyRevenue)}</div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -184,4 +154,3 @@ export default function SpvsPage() {
     </div>
   );
 }
-
