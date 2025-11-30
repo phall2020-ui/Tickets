@@ -1032,40 +1032,70 @@
     </main>
 
     <script>
-        // Sample Data
-        const sites = [
-            { id: 1, name: 'Meadow Solar Farm', size: 2450, contract: 'Yes', date: '2023-01-15', spv: 'OS2', pmCost: 500, cctvCost: 200, cleaningCost: 300 },
-            { id: 2, name: 'Hilltop Energy Park', size: 1850, contract: 'Yes', date: '2023-02-20', spv: 'AD1', pmCost: 450, cctvCost: 150, cleaningCost: 250 },
-            { id: 3, name: 'Valley View Solar', size: 3200, contract: 'Yes', date: '2023-03-10', spv: 'OS2', pmCost: 600, cctvCost: 250, cleaningCost: 400 },
-            { id: 4, name: 'Sunrise Industrial', size: 980, contract: 'Yes', date: '2023-04-05', spv: 'ESI8', pmCost: 300, cctvCost: 100, cleaningCost: 150 },
-            { id: 5, name: 'Northfield Array', size: 1560, contract: 'Yes', date: '2023-05-18', spv: 'FS', pmCost: 400, cctvCost: 150, cleaningCost: 200 },
-            { id: 6, name: 'Greenacre Station', size: 2100, contract: 'Yes', date: '2023-06-22', spv: 'ESI1', pmCost: 480, cctvCost: 180, cleaningCost: 280 },
-            { id: 7, name: 'Riverside Solar', size: 890, contract: 'No', date: null, spv: 'UV1', pmCost: 280, cctvCost: 80, cleaningCost: 120 },
-            { id: 8, name: 'Lakeside Power', size: 1720, contract: 'Yes', date: '2023-08-14', spv: 'SKY', pmCost: 420, cctvCost: 160, cleaningCost: 220 },
-            { id: 9, name: 'Oakwood Farm', size: 2680, contract: 'Yes', date: '2023-09-01', spv: 'OS2', pmCost: 550, cctvCost: 220, cleaningCost: 350 },
-            { id: 10, name: 'Pinewood Solar', size: 1340, contract: 'Yes', date: '2023-10-12', spv: 'AD1', pmCost: 380, cctvCost: 140, cleaningCost: 180 },
-            { id: 11, name: 'Cedar Heights', size: 1980, contract: 'No', date: null, spv: 'ESI10', pmCost: 460, cctvCost: 170, cleaningCost: 260 },
-            { id: 12, name: 'Willow Creek', size: 760, contract: 'Yes', date: '2023-11-28', spv: 'FS', pmCost: 250, cctvCost: 70, cleaningCost: 100 },
-        ];
+        // API Configuration
+        const API_BASE = window.location.origin;
 
-        const spvs = [
-            { code: 'OS2', name: 'Olympus Solar 2 Ltd', sites: 12, contracted: 10, capacity: 8250, revenue: 12840 },
-            { code: 'AD1', name: 'AMPYR Distributed Energy 1 Ltd', sites: 8, contracted: 7, capacity: 5420, revenue: 8450 },
-            { code: 'FS', name: 'Fylde Solar Ltd', sites: 6, contracted: 5, capacity: 3890, revenue: 5980 },
-            { code: 'ESI8', name: 'Eden Sustainable Investments 8 Ltd', sites: 5, contracted: 4, capacity: 2980, revenue: 4620 },
-            { code: 'ESI1', name: 'Eden Sustainable Investments 1 Ltd', sites: 4, contracted: 4, capacity: 2100, revenue: 3280 },
-            { code: 'ESI10', name: 'Eden Sustainable Investments 10 Ltd', sites: 5, contracted: 3, capacity: 1980, revenue: 1450 },
-            { code: 'UV1', name: 'ULTRAVOLT SPV1 LIMITED', sites: 4, contracted: 3, capacity: 890, revenue: 1200 },
-            { code: 'SKY', name: 'Skylight Energy Ltd', sites: 3, contracted: 2, capacity: 1720, revenue: 600 },
-        ];
+        // Global Data Storage
+        let sites = [];
+        let spvs = [];
+        let portfolio = {};
+        let dashboard = {};
 
-        // Calculate fees
-        function calculateFees(site) {
-            const siteFixedCosts = site.pmCost + site.cctvCost + site.cleaningCost;
-            const portfolioCost = site.size * 1.80; // 20-30MW tier
-            const fixedFee = siteFixedCosts + portfolioCost;
-            const monthlyFee = site.contract === 'Yes' ? fixedFee / 12 : 0;
-            return { siteFixedCosts, fixedFee, monthlyFee };
+        // API Functions
+        async function fetchPortfolio() {
+            const response = await fetch(`${API_BASE}/api/portfolio`);
+            portfolio = await response.json();
+            return portfolio;
+        }
+
+        async function fetchSites() {
+            const response = await fetch(`${API_BASE}/api/sites`);
+            sites = await response.json();
+            return sites;
+        }
+
+        async function fetchSPVs() {
+            const response = await fetch(`${API_BASE}/api/spvs/summary`);
+            spvs = await response.json();
+            return spvs;
+        }
+
+        async function fetchDashboard() {
+            const response = await fetch(`${API_BASE}/api/dashboard`);
+            dashboard = await response.json();
+            return dashboard;
+        }
+
+        // Load all data
+        async function loadData() {
+            try {
+                await Promise.all([
+                    fetchPortfolio(),
+                    fetchSites(),
+                    fetchSPVs(),
+                    fetchDashboard()
+                ]);
+                updateDashboard();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Failed to load data from server. Please ensure the server is running.');
+            }
+        }
+
+        // Update Dashboard Stats
+        function updateDashboard() {
+            // Update stat cards
+            document.querySelector('.stats-grid .card:nth-child(1) .card-value').textContent = portfolio.totalSites || 0;
+            document.querySelector('.stats-grid .card:nth-child(1) .card-sub').innerHTML = `<span>${portfolio.contractedSites || 0}</span> contracted`;
+
+            document.querySelector('.stats-grid .card:nth-child(2) .card-value').textContent = `${(portfolio.totalCapacityMW || 0).toFixed(1)} MW`;
+            document.querySelector('.stats-grid .card:nth-child(2) .card-sub').innerHTML = `<span>${(portfolio.contractedCapacityMW || 0).toFixed(1)} MW</span> contracted`;
+
+            document.querySelector('.stats-grid .card:nth-child(3) .card-value').textContent = formatCurrency(portfolio.totalMonthlyRevenue || 0);
+            document.querySelector('.stats-grid .card:nth-child(3) .card-sub').innerHTML = `<span>${formatCurrency(portfolio.totalAnnualRevenue || 0)}</span> annually`;
+
+            document.querySelector('.stats-grid .card:nth-child(4) .card-value').textContent = portfolio.currentTier || '<20MW';
+            document.querySelector('.stats-grid .card:nth-child(4) .card-sub').innerHTML = `<span>£${(portfolio.ratePerKwp || 2.00).toFixed(2)}</span>/kWp rate`;
         }
 
         // Format currency
@@ -1084,13 +1114,17 @@
         // Initialize Charts
         function initCharts() {
             // Revenue Chart
+            const revenueTrend = dashboard.revenueTrend || [];
+            const revenueLabels = revenueTrend.map(d => d.month);
+            const revenueData = revenueTrend.map(d => d.revenue);
+
             new Chart(document.getElementById('revenueChart'), {
                 type: 'line',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    labels: revenueLabels.length > 0 ? revenueLabels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                     datasets: [{
                         label: 'Revenue',
-                        data: [28000, 29500, 31000, 32500, 34000, 35200, 36100, 36800, 37400, 37900, 38200, 38420],
+                        data: revenueData.length > 0 ? revenueData : [28000, 29500, 31000, 32500, 34000, 35200, 36100, 36800, 37400, 37900, 38200, 38420],
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         fill: true,
@@ -1110,12 +1144,13 @@
             });
 
             // Contract Status Chart
+            const contractData = dashboard.contractStatus || { contracted: 0, notContracted: 0 };
             new Chart(document.getElementById('contractChart'), {
                 type: 'doughnut',
                 data: {
                     labels: ['Contracted', 'Not Contracted'],
                     datasets: [{
-                        data: [38, 9],
+                        data: [contractData.contracted, contractData.notContracted],
                         backgroundColor: ['#10b981', '#e5e7eb'],
                         borderWidth: 0
                     }]
@@ -1188,13 +1223,9 @@
 
         // Render Top Sites
         function renderTopSites() {
-            const sorted = sites
-                .map(s => ({ ...s, ...calculateFees(s) }))
-                .filter(s => s.contract === 'Yes')
-                .sort((a, b) => b.monthlyFee - a.monthlyFee)
-                .slice(0, 5);
+            if (!dashboard.topSites) return;
 
-            const html = sorted.map((site, i) => `
+            const html = dashboard.topSites.map((site, i) => `
                 <div class="top-site">
                     <div class="top-site-info">
                         <div class="top-site-rank ${i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-default'}">${i + 1}</div>
@@ -1213,18 +1244,17 @@
         // Render Sites Table
         function renderSitesTable(data = sites) {
             const html = data.map(site => {
-                const fees = calculateFees(site);
                 return `
                     <tr>
                         <td><a href="#" class="site-link">${site.name}</a></td>
-                        <td>${site.size.toLocaleString()}</td>
+                        <td>${site.systemSizeKwp.toLocaleString()}</td>
                         <td><span class="status-badge ${site.contract === 'Yes' ? 'status-yes' : 'status-no'}">${site.contract}</span></td>
-                        <td>${site.date ? new Date(site.date).toLocaleDateString('en-GB') : '—'}</td>
-                        <td>${site.spv}</td>
-                        <td>${formatCurrency(fees.siteFixedCosts)}</td>
-                        <td>${formatCurrency(fees.fixedFee)}</td>
+                        <td>${site.onboardDate ? new Date(site.onboardDate).toLocaleDateString('en-GB') : '—'}</td>
+                        <td>${site.spvCode || 'N/A'}</td>
+                        <td>${formatCurrency(site.siteFixedCosts)}</td>
+                        <td>${formatCurrency(site.fixedFee)}</td>
                         <td style="font-weight: 600; color: ${site.contract === 'Yes' ? 'var(--green)' : 'var(--text-muted)'}">
-                            ${site.contract === 'Yes' ? formatCurrency(fees.monthlyFee) : '—'}
+                            ${site.contract === 'Yes' ? formatCurrency(site.monthlyFee) : '—'}
                         </td>
                     </tr>
                 `;
@@ -1236,7 +1266,10 @@
         // Filter Sites
         function filterSites() {
             const search = document.getElementById('siteSearch').value.toLowerCase();
-            const filtered = sites.filter(s => s.name.toLowerCase().includes(search) || s.spv.toLowerCase().includes(search));
+            const filtered = sites.filter(s =>
+                s.name.toLowerCase().includes(search) ||
+                (s.spvCode && s.spvCode.toLowerCase().includes(search))
+            );
             renderSitesTable(filtered);
         }
 
@@ -1347,13 +1380,22 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Show loading state
+            console.log('Loading data from API...');
+
+            // Load data from API
+            await loadData();
+
+            // Initialize UI components
             initCharts();
             renderTopSites();
             renderSitesTable();
             renderSPVs();
             renderCMHistory();
             updateCMDays();
+
+            console.log('Data loaded successfully!');
         });
     </script>
 </body>
