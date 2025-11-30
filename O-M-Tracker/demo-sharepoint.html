@@ -834,19 +834,30 @@
                 <p>Import sites from Excel spreadsheet</p>
             </div>
             <div class="content">
-                <div class="chart-card" style="max-width: 600px;">
-                    <h3 style="margin-bottom: 8px;">Import from Excel</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 24px;">Upload your Clearsol O&M Framework Tracker spreadsheet to import site data.</p>
-                    <div style="border: 2px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer;" onclick="document.getElementById('fileInput').click()">
-                        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
-                        <p><strong style="color: var(--blue);">Click to upload</strong> or drag and drop</p>
-                        <p style="font-size: 12px; color: var(--text-muted);">Excel files only (.xlsx, .xls)</p>
+                <div class="chart-card" style="max-width: 800px;">
+                    <h3 style="margin-bottom: 8px;">Import from CSV</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 12px;">Upload your Clearsol O&M Framework Tracker spreadsheet as CSV. The importer auto-detects your column structure.</p>
+                    <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #92400e;">
+                        <strong>📝 How to convert Excel to CSV:</strong><br>
+                        1. Open your Excel file in Excel or Google Sheets<br>
+                        2. File → Download As → Comma-Separated Values (.csv)<br>
+                        3. Upload the CSV file below
                     </div>
-                    <button id="importBtn" style="width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: 600; margin-top: 20px; cursor: pointer;" disabled>
-                        📥 Import Sites
-                    </button>
-                    <div id="importStatus" style="margin-top: 12px; color: var(--green);"></div>
+                    <div id="importZone" style="border: 2px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                        <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
+                        <p><strong style="color: var(--blue);">Click to upload</strong> or drag and drop</p>
+                        <p style="font-size: 12px; color: var(--text-muted);">CSV files (.csv)</p>
+                    </div>
+                    <div id="importStatus" style="margin-top: 12px; color: var(--green); display: none;"></div>
+                    <div id="columnMappingUI" style="margin-top: 20px; display: none;">
+                        <h4>Column Mapping (Preview of first 5 rows)</h4>
+                        <div id="mappingTable" style="max-height: 300px; overflow-y: auto; margin: 16px 0; border: 1px solid var(--border); border-radius: 8px; padding: 12px;"></div>
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="confirmImport()" style="flex: 1; padding: 10px; background: var(--green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">✅ Import Data</button>
+                            <button onclick="cancelImport()" style="flex: 1; padding: 10px; background: #e5e7eb; color: var(--text); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">❌ Cancel</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="chart-card" style="max-width: 600px; margin-top: 20px;">
@@ -1051,25 +1062,266 @@
         </div>
     </main>
 
+    <!-- Site Detail Modal -->
+    <div id="siteDetailModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; flex-direction: column;">
+        <div style="background: white; border-radius: 12px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative;">
+            <button onclick="closeSiteModal()" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+            <h2 id="siteDetailName" style="font-size: 20px; font-weight: 700; margin-bottom: 16px;"></h2>
+            <div id="siteDetailContent" style="font-size: 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">System Size (kWp)</label>
+                        <div id="siteSize" style="font-size: 18px; font-weight: 600; margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">Contract Status</label>
+                        <div id="siteContract" style="font-size: 18px; font-weight: 600; margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">SPV Code</label>
+                        <div id="siteSPV" style="font-size: 16px; margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">Onboard Date</label>
+                        <div id="siteDate" style="font-size: 16px; margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">PM Cost</label>
+                        <div id="sitePMCost" style="font-size: 16px; margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">CCTV Cost</label>
+                        <div id="siteCCTVCost" style="font-size: 16px; margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">Cleaning Cost</label>
+                        <div id="siteCleaningCost" style="font-size: 16px; margin-top: 4px;"></div>
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted); font-size: 12px;">Monthly Fee</label>
+                        <div id="siteMonthlyFee" style="font-size: 18px; font-weight: 600; color: var(--green); margin-top: 4px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+                <button onclick="closeSiteModal()" style="flex: 1; padding: 10px; background: #e5e7eb; color: var(--text); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
 
-                // Enable import button when file is selected
+                // Flexible Import Handler
+                let pendingImportData = null;
+
+                function mapColumns(headers, data) {
+                    // Column name mappings - supports variations
+                    const columnMappings = {
+                        name: ['site name', 'site', 'name', 'title', 'project'],
+                        systemSizeKwp: ['system size', 'size', 'capacity', 'kwp', 'kw', 'power'],
+                        contract: ['contract', 'contracted', 'contract status', 'status'],
+                        onboardDate: ['onboard date', 'onboard', 'date', 'start date', 'commissioned'],
+                        spvCode: ['spv', 'spv code', 'spv name', 'company', 'entity'],
+                        pmCost: ['pm cost', 'pm', 'preventive maintenance'],
+                        cctvCost: ['cctv', 'cctv cost', 'inspection'],
+                        cleaningCost: ['cleaning', 'cleaning cost', 'panel cleaning']
+                    };
+
+                    // Find matching columns
+                    const mapping = {};
+                    const lowerHeaders = headers.map(h => (h || '').toString().toLowerCase().trim());
+
+                    for (const [key, aliases] of Object.entries(columnMappings)) {
+                        for (let i = 0; i < lowerHeaders.length; i++) {
+                            const headerLower = lowerHeaders[i];
+                            if (aliases.some(alias => headerLower.includes(alias) || alias.includes(headerLower.split(' ')[0]))) {
+                                mapping[key] = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    return mapping;
+                }
+
+                function parseImportData(headers, rows, mapping) {
+                    return rows.map(row => {
+                        const site = {
+                            id: Math.random() * 10000,
+                            name: row[mapping.name] ? String(row[mapping.name]).trim() : 'Unknown Site',
+                            systemSizeKwp: mapping.systemSizeKwp ? parseFloat(row[mapping.systemSizeKwp]) || 0 : 0,
+                            contract: mapping.contract ? (String(row[mapping.contract]).toLowerCase().includes('yes') ? 'Yes' : 'No') : 'No',
+                            onboardDate: mapping.onboardDate ? row[mapping.onboardDate] : null,
+                            spvCode: mapping.spvCode ? String(row[mapping.spvCode]).trim() : null,
+                            pmCost: mapping.pmCost ? parseFloat(row[mapping.pmCost]) || 0 : 0,
+                            cctvCost: mapping.cctvCost ? parseFloat(row[mapping.cctvCost]) || 0 : 0,
+                            cleaningCost: mapping.cleaningCost ? parseFloat(row[mapping.cleaningCost]) || 0 : 0,
+                            siteType: 'Rooftop',
+                            contractStatus: mapping.contract ? (String(row[mapping.contract]).toLowerCase().includes('yes') ? 'Yes' : 'No') : 'NO'
+                        };
+                        return site;
+                    }).filter(s => s.name !== 'Unknown Site' && s.systemSizeKwp > 0);
+                }
+
+                function handleFileImport(file) {
+                    if (!file.name.endsWith('.csv')) {
+                        alert('Please upload a CSV file. Convert your Excel spreadsheet to CSV first.');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const text = e.target.result;
+                            const lines = text.split('\n');
+
+                            if (lines.length < 5) {
+                                alert('CSV file appears to be empty or invalid');
+                                return;
+                            }
+
+                            // Parse all lines as arrays
+                            const parsedLines = lines.map(line => {
+                                const cells = [];
+                                let current = '';
+                                let inQuotes = false;
+                                for (let char of line) {
+                                    if (char === '"') {
+                                        inQuotes = !inQuotes;
+                                    } else if (char === ',' && !inQuotes) {
+                                        cells.push(current.trim().replace(/^"|"$/g, ''));
+                                        current = '';
+                                    } else {
+                                        current += char;
+                                    }
+                                }
+                                cells.push(current.trim().replace(/^"|"$/g, ''));
+                                return cells;
+                            }).filter(r => r.some(v => v));
+
+                            // Find the header row (contains "Site" in first column)
+                            let headerRowIdx = -1;
+                            for (let i = 0; i < parsedLines.length; i++) {
+                                const firstCell = parsedLines[i][0]?.toLowerCase() || '';
+                                if (firstCell.includes('site') && parsedLines[i].some(c => c?.toLowerCase().includes('system'))) {
+                                    headerRowIdx = i;
+                                    break;
+                                }
+                            }
+
+                            if (headerRowIdx === -1) {
+                                alert('Could not find header row with "Site" and "System Size"');
+                                return;
+                            }
+
+                            const headers = parsedLines[headerRowIdx];
+                            const rows = parsedLines.slice(headerRowIdx + 1).filter(r => r[0]?.trim() && r[0].trim() !== 'Total');
+
+                            if (rows.length === 0) {
+                                alert('No site data found in spreadsheet');
+                                return;
+                            }
+
+                            processImportData(headers, rows);
+                        } catch (error) {
+                            alert('Error reading CSV: ' + error.message);
+                            console.error(error);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+
+                function processImportData(headers, rows) {
+                    if (rows.length === 0) {
+                        alert('No data found in spreadsheet!');
+                        return;
+                    }
+
+                    const mapping = mapColumns(headers, rows);
+                    pendingImportData = parseImportData(headers, rows, mapping);
+
+                    // Show preview
+                    const preview = document.getElementById('mappingTable');
+                    preview.innerHTML = `
+                        <div style="background: #f9fafb; padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px;">
+                            <strong>Found ${pendingImportData.length} sites</strong><br>
+                            Sample data:
+                        </div>
+                        <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                            <tr style="background: #f3f4f6;">
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border);">Site Name</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border);">Size (kWp)</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border);">Contract</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border);">SPV</th>
+                            </tr>
+                            ${pendingImportData.slice(0, 5).map(s => `
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 8px;">${s.name}</td>
+                                    <td style="padding: 8px;">${s.systemSizeKwp}</td>
+                                    <td style="padding: 8px;">${s.contract}</td>
+                                    <td style="padding: 8px;">${s.spvCode || '—'}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    `;
+
+                    document.getElementById('columnMappingUI').style.display = 'block';
+                }
+
+                function confirmImport() {
+                    if (pendingImportData && pendingImportData.length > 0) {
+                        sites = pendingImportData;
+                        calculatePortfolio();
+                        calculateDashboard();
+                        updateDashboard();
+
+                        document.getElementById('columnMappingUI').style.display = 'none';
+                        const status = document.getElementById('importStatus');
+                        status.style.display = 'block';
+                        status.textContent = `✅ Successfully imported ${sites.length} sites!`;
+                        status.style.color = 'var(--green)';
+
+                        showPage('dashboard');
+                    }
+                }
+
+                function cancelImport() {
+                    pendingImportData = null;
+                    document.getElementById('columnMappingUI').style.display = 'none';
+                    document.getElementById('fileInput').value = '';
+                }
+
+                // Setup drag and drop
                 document.addEventListener('DOMContentLoaded', function() {
-                    var fileInput = document.getElementById('fileInput');
-                    var importBtn = document.getElementById('importBtn');
-                    var importStatus = document.getElementById('importStatus');
-                    if (fileInput && importBtn) {
-                        fileInput.addEventListener('change', function() {
-                            if (fileInput.files.length > 0) {
-                                importBtn.disabled = false;
-                                importStatus.textContent = fileInput.files[0].name + ' selected.';
-                            } else {
-                                importBtn.disabled = true;
-                                importStatus.textContent = '';
+                    const importZone = document.getElementById('importZone');
+                    const fileInput = document.getElementById('fileInput');
+
+                    if (importZone && fileInput) {
+                        importZone.addEventListener('click', () => fileInput.click());
+
+                        importZone.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            importZone.style.background = '#f3f4f6';
+                            importZone.style.borderColor = 'var(--blue)';
+                        });
+
+                        importZone.addEventListener('dragleave', () => {
+                            importZone.style.background = '';
+                            importZone.style.borderColor = '';
+                        });
+
+                        importZone.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            importZone.style.background = '';
+                            if (e.dataTransfer.files.length > 0) {
+                                handleFileImport(e.dataTransfer.files[0]);
                             }
                         });
-                        importBtn.addEventListener('click', function() {
-                            importStatus.textContent = 'Import feature coming soon!';
+
+                        fileInput.addEventListener('change', function() {
+                            if (fileInput.files.length > 0) {
+                                handleFileImport(fileInput.files[0]);
+                            }
                         });
                     }
                 });
@@ -1403,18 +1655,42 @@
             initCharts();
         }
 
+        function openSiteModal(siteId) {
+            const site = sites.find(s => s.id === siteId);
+            if (!site) return;
+
+            document.getElementById('siteDetailName').textContent = site.name;
+            document.getElementById('siteSize').textContent = site.systemSizeKwp.toLocaleString() + ' kWp';
+            document.getElementById('siteContract').innerHTML = `<span class="status-badge ${site.contract === 'Yes' ? 'status-yes' : 'status-no'}">${site.contract}</span>`;
+            document.getElementById('siteSPV').textContent = site.spvCode || '—';
+            document.getElementById('siteDate').textContent = site.onboardDate ? new Date(site.onboardDate).toLocaleDateString('en-GB') : '—';
+            document.getElementById('sitePMCost').textContent = formatCurrency(site.pmCost);
+            document.getElementById('siteCCTVCost').textContent = formatCurrency(site.cctvCost);
+            document.getElementById('siteCleaningCost').textContent = formatCurrency(site.cleaningCost);
+            document.getElementById('siteMonthlyFee').textContent = formatCurrency(site.monthlyFee || 0);
+
+            document.getElementById('siteDetailModal').style.display = 'flex';
+        }
+
+        function closeSiteModal() {
+            document.getElementById('siteDetailModal').style.display = 'none';
+        }
+
         function renderTopSites() {
             const tbody = document.querySelector('#dashboard .chart-card:nth-child(3) tbody');
             if (!tbody || !dashboard.topSites) return;
 
-            tbody.innerHTML = dashboard.topSites.map(site => `
-                <tr>
-                    <td><a href="#" class="site-link" onclick="showPage('sites'); return false;">${site.name}</a></td>
-                    <td>${site.spv}</td>
-                    <td>${site.size.toLocaleString()} kWp</td>
-                    <td style="font-weight: 600;">${formatCurrency(site.monthlyFee)}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = dashboard.topSites.map(site => {
+                const siteData = sites.find(s => s.name === site.name);
+                return `
+                    <tr>
+                        <td><a href="#" class="site-link" onclick="openSiteModal(${siteData.id}); return false;">${site.name}</a></td>
+                        <td>${site.spv}</td>
+                        <td>${site.size.toLocaleString()} kWp</td>
+                        <td style="font-weight: 600;">${formatCurrency(site.monthlyFee)}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderTopSPVs() {
@@ -1441,7 +1717,7 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="9" style="text-align: center; padding: 16px; color: var(--text-muted);">
-                            No site data loaded from SharePoint. Check the Sites list or your permissions.
+                            No site data loaded. Upload a spreadsheet to import site data.
                         </td>
                     </tr>
                 `;
@@ -1450,7 +1726,7 @@
 
             tbody.innerHTML = sites.map(site => `
                 <tr>
-                    <td><a href="#" class="site-link">${site.name}</a></td>
+                    <td><a href="#" class="site-link" onclick="openSiteModal(${site.id}); return false;">${site.name}</a></td>
                     <td>${site.systemSizeKwp.toLocaleString()}</td>
                     <td><span class="status-badge ${site.contract === 'Yes' ? 'status-yes' : 'status-no'}">${site.contract}</span></td>
                     <td>${site.onboardDate ? new Date(site.onboardDate).toLocaleDateString('en-GB') : '—'}</td>
