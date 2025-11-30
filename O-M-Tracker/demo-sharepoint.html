@@ -1028,3 +1028,463 @@
                     </ul>
                 </div>
             </div>
+        </div>
+    </main>
+
+    <script>
+        // ========================================
+        // SHAREPOINT REST API INTEGRATION
+        // O&M Portfolio Tracker - SharePoint Version
+        // ========================================
+
+        // SharePoint Context
+        const SP_CONFIG = {
+            siteUrl: typeof _spPageContextInfo !== 'undefined' ? _spPageContextInfo.webAbsoluteUrl : window.location.origin,
+            listsUrl: typeof _spPageContextInfo !== 'undefined' ? _spPageContextInfo.webAbsoluteUrl + '/_api/web/lists' : '/_api/web/lists'
+        };
+
+        // Global Data Storage
+        let sites = [];
+        let spvs = [];
+        let rateTiers = [];
+        let portfolio = {};
+        let dashboard = {};
+
+        // Get Request Digest for POST/UPDATE/DELETE operations
+        function getRequestDigest() {
+            const digestElement = document.getElementById('__REQUESTDIGEST');
+            if (digestElement) {
+                return digestElement.value;
+            }
+            // Fallback: Fetch new digest
+            return fetch(SP_CONFIG.siteUrl + '/_api/contextinfo', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json;odata=verbose'
+                }
+            })
+            .then(r => r.json())
+            .then(d => d.d.GetContextWebInformation.FormDigestValue);
+        }
+
+        // Generic SharePoint GET request
+        async function spGet(listName, query = '') {
+            const url = `${SP_CONFIG.listsUrl}/getbytitle('${listName}')/items${query ? '?' + query : '?$top=5000'}`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json;odata=verbose'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`SharePoint API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.d.results;
+            } catch (error) {
+                console.error(`Error fetching from ${listName}:`, error);
+                return [];
+            }
+        }
+
+        // Load Sites from SharePoint
+        async function loadSites() {
+            const spSites = await spGet('Sites', '$select=*&$top=5000&$orderby=Title');
+
+            sites = spSites.map(site => ({
+                id: site.ID,
+                name: site.Title,
+                systemSizeKwp: site.SystemSizeKwp || 0,
+                siteType: site.SiteType || 'Rooftop',
+                contractStatus: site.ContractStatus || 'NO',
+                contract: site.ContractStatus === 'Yes' ? 'Yes' : 'No',
+                onboardDate: site.OnboardDate,
+                pmCost: site.PMCost || 0,
+                cctvCost: site.CCTVCost || 0,
+                cleaningCost: site.CleaningCost || 0,
+                spvCode: site.SPVCode || null
+            }));
+
+            return sites;
+        }
+
+        // Load SPVs from SharePoint
+        async function loadSPVs() {
+            const spSPVs = await spGet('SPVs', '$select=*&$orderby=Title');
+
+            spvs = spSPVs.map(spv => ({
+                code: spv.Title,
+                name: spv.SPVName || spv.Title
+            }));
+
+            return spvs;
+        }
+
+        // Load Rate Tiers from SharePoint
+        async function loadRateTiers() {
+            const spTiers = await spGet('RateTiers', '$select=*&$filter=IsActive eq true&$orderby=MinCapacityMW desc');
+
+            rateTiers = spTiers.map(tier => ({
+                tierName: tier.Title,
+                minCapacityMW: tier.MinCapacityMW || 0,
+                maxCapacityMW: tier.MaxCapacityMW,
+                ratePerKwp: tier.RatePerKwp || 2.00,
+                isActive: tier.IsActive
+            }));
+
+            return rateTiers;
+        }
+
+        // Get applicable rate tier for given capacity
+        function getRateTier(contractedMW) {
+            for (let tier of rateTiers) {
+                if (contractedMW >= tier.minCapacityMW) {
+                    if (!tier.maxCapacityMW || contractedMW < tier.maxCapacityMW) {
+                        return tier;
+                    }
+                }
+            }
+            return rateTiers[rateTiers.length - 1] || { tierName: '<20MW', ratePerKwp: 2.00 };
+        }
+
+        // Calculate fees for a site
+        function calculateSiteFees(site, ratePerKwp) {
+            const siteFixedCosts = site.pmCost + site.cctvCost + site.cleaningCost;
+            const portfolioCost = site.systemSizeKwp * ratePerKwp;
+            const fixedFee = siteFixedCosts + portfolioCost;
+            const monthlyFee = site.contract === 'Yes' ? fixedFee / 12 : 0;
+
+            return {
+                siteFixedCosts,
+                portfolioCost,
+                fixedFee,
+                monthlyFee
+            };
+        }
+
+        // Calculate portfolio summary
+        function calculatePortfolio() {
+            const totalSites = sites.length;
+            const contractedSites = sites.filter(s => s.contract === 'Yes');
+            const totalCapacityKwp = sites.reduce((sum, s) => sum + s.systemSizeKwp, 0);
+            const contractedCapacityKwp = contractedSites.reduce((sum, s) => sum + s.systemSizeKwp, 0);
+
+            const totalCapacityMW = totalCapacityKwp / 1000;
+            const contractedCapacityMW = contractedCapacityKwp / 1000;
+
+            const tier = getRateTier(contractedCapacityMW);
+
+            let totalMonthlyRevenue = 0;
+            contractedSites.forEach(site => {
+                const fees = calculateSiteFees(site, tier.ratePerKwp);
+                totalMonthlyRevenue += fees.monthlyFee;
+            });
+
+            portfolio = {
+                totalSites,
+                contractedSites: contractedSites.length,
+                totalCapacityMW,
+                contractedCapacityMW,
+                currentTier: tier.tierName,
+                ratePerKwp: tier.ratePerKwp,
+                totalMonthlyRevenue,
+                totalAnnualRevenue: totalMonthlyRevenue * 12
+            };
+
+            return portfolio;
+        }
+
+        // Calculate dashboard data
+        function calculateDashboard() {
+            const tier = getRateTier(portfolio.contractedCapacityMW);
+
+            sites.forEach(site => {
+                const fees = calculateSiteFees(site, tier.ratePerKwp);
+                Object.assign(site, fees);
+            });
+
+            const topSites = sites
+                .filter(s => s.contract === 'Yes')
+                .sort((a, b) => b.monthlyFee - a.monthlyFee)
+                .slice(0, 5)
+                .map(s => ({
+                    name: s.name,
+                    spv: s.spvCode || 'N/A',
+                    size: s.systemSizeKwp,
+                    monthlyFee: s.monthlyFee
+                }));
+
+            const revenueTrend = Array.from({ length: 12 }, (_, i) => ({
+                month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
+                revenue: portfolio.totalMonthlyRevenue * (0.7 + (i * 0.025))
+            }));
+
+            dashboard = {
+                topSites,
+                revenueTrend,
+                contractStatus: {
+                    contracted: portfolio.contractedSites,
+                    notContracted: portfolio.totalSites - portfolio.contractedSites
+                }
+            };
+
+            const spvSummary = {};
+            sites.forEach(site => {
+                const code = site.spvCode || 'Unknown';
+                if (!spvSummary[code]) {
+                    spvSummary[code] = {
+                        code,
+                        name: spvs.find(s => s.code === code)?.name || code,
+                        sites: 0,
+                        contracted: 0,
+                        capacity: 0,
+                        revenue: 0
+                    };
+                }
+
+                spvSummary[code].sites++;
+                spvSummary[code].capacity += site.systemSizeKwp;
+
+                if (site.contract === 'Yes') {
+                    spvSummary[code].contracted++;
+                    spvSummary[code].revenue += site.monthlyFee || 0;
+                }
+            });
+
+            spvs = Object.values(spvSummary);
+            return dashboard;
+        }
+
+        // UI Functions
+        function formatCurrency(value) {
+            return '£' + (value || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            const page = document.getElementById(pageId);
+            if (page) page.classList.add('active');
+
+            event.target.closest('.nav-item').classList.add('active');
+        }
+
+        function updateDashboard() {
+            // Update stat cards
+            const statCards = document.querySelectorAll('.stats-grid .card');
+            if (statCards[0]) {
+                statCards[0].querySelector('.card-value').textContent = portfolio.totalSites || 0;
+                statCards[0].querySelector('.card-sub').innerHTML = `<span>${portfolio.contractedSites || 0}</span> contracted`;
+            }
+            if (statCards[1]) {
+                statCards[1].querySelector('.card-value').textContent = `${(portfolio.totalCapacityMW || 0).toFixed(1)} MW`;
+                statCards[1].querySelector('.card-sub').innerHTML = `<span>${(portfolio.contractedCapacityMW || 0).toFixed(1)} MW</span> contracted`;
+            }
+            if (statCards[2]) {
+                statCards[2].querySelector('.card-value').textContent = formatCurrency(portfolio.totalMonthlyRevenue || 0);
+                statCards[2].querySelector('.card-sub').innerHTML = `<span>${formatCurrency(portfolio.totalAnnualRevenue || 0)}</span> annually`;
+            }
+            if (statCards[3]) {
+                statCards[3].querySelector('.card-value').textContent = portfolio.currentTier || '<20MW';
+                statCards[3].querySelector('.card-sub').innerHTML = `<span>£${(portfolio.ratePerKwp || 2.00).toFixed(2)}</span>/kWp rate`;
+            }
+
+            // Render tables and charts
+            renderTopSites();
+            renderTopSPVs();
+            renderSitesTable();
+            renderSPVsTable();
+            initCharts();
+        }
+
+        function renderTopSites() {
+            const tbody = document.querySelector('#dashboard .chart-card:nth-child(3) tbody');
+            if (!tbody || !dashboard.topSites) return;
+
+            tbody.innerHTML = dashboard.topSites.map(site => `
+                <tr>
+                    <td><a href="#" class="site-link" onclick="showPage('sites'); return false;">${site.name}</a></td>
+                    <td>${site.spv}</td>
+                    <td>${site.size.toLocaleString()} kWp</td>
+                    <td style="font-weight: 600;">${formatCurrency(site.monthlyFee)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTopSPVs() {
+            const tbody = document.querySelector('#dashboard .chart-card:nth-child(4) tbody');
+            if (!tbody || !spvs) return;
+
+            const topSPVs = spvs.sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+            tbody.innerHTML = topSPVs.map(spv => `
+                <tr>
+                    <td style="font-weight: 600;">${spv.code}</td>
+                    <td>${spv.name}</td>
+                    <td>${spv.sites}</td>
+                    <td><span class="badge badge-green">${spv.contracted}</span></td>
+                    <td>${formatCurrency(spv.revenue)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSitesTable() {
+            const tbody = document.getElementById('sitesBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = sites.map(site => `
+                <tr>
+                    <td><a href="#" class="site-link">${site.name}</a></td>
+                    <td>${site.systemSizeKwp.toLocaleString()}</td>
+                    <td><span class="status-badge ${site.contract === 'Yes' ? 'status-yes' : 'status-no'}">${site.contract}</span></td>
+                    <td>${site.onboardDate ? new Date(site.onboardDate).toLocaleDateString('en-GB') : '—'}</td>
+                    <td>${site.spvCode || '—'}</td>
+                    <td>${formatCurrency(site.pmCost)}</td>
+                    <td>${formatCurrency(site.cctvCost)}</td>
+                    <td>${formatCurrency(site.cleaningCost)}</td>
+                    <td style="font-weight: 600;">${formatCurrency(site.monthlyFee || 0)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSPVsTable() {
+            const tbody = document.getElementById('spvsBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = spvs.map(spv => `
+                <tr>
+                    <td style="font-weight: 600;">${spv.code}</td>
+                    <td>${spv.name}</td>
+                    <td>${spv.sites}</td>
+                    <td><span class="badge badge-green">${spv.contracted}</span></td>
+                    <td>${(spv.capacity / 1000).toFixed(2)} MW</td>
+                    <td style="font-weight: 600;">${formatCurrency(spv.revenue)}</td>
+                    <td style="font-weight: 600;">${formatCurrency(spv.revenue * 12)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function initCharts() {
+            initRevenueChart();
+            initContractChart();
+            initCMChart();
+        }
+
+        function initRevenueChart() {
+            const canvas = document.getElementById('revenueChart');
+            if (!canvas || !dashboard.revenueTrend) return;
+
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dashboard.revenueTrend.map(d => d.month),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: dashboard.revenueTrend.map(d => d.revenue),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: false, ticks: { callback: value => '£' + value.toLocaleString() } }
+                    }
+                }
+            });
+        }
+
+        function initContractChart() {
+            const canvas = document.getElementById('contractChart');
+            if (!canvas || !dashboard.contractStatus) return;
+
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Contracted', 'Not Contracted'],
+                    datasets: [{
+                        data: [dashboard.contractStatus.contracted, dashboard.contractStatus.notContracted],
+                        backgroundColor: ['#10b981', '#e5e7eb'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function initCMChart() {
+            const canvas = document.getElementById('cmUsageChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const used = [0.5, 1.2, 0.8, 1.5, 0.3, 0.9, 1.1, 0.6, 1.3, 0.7, 0.75, 0];
+            const allowance = Array(12).fill(2);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Days Used',
+                            data: used,
+                            backgroundColor: '#3b82f6'
+                        },
+                        {
+                            label: 'Allowance',
+                            data: allowance,
+                            backgroundColor: '#e5e7eb'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, max: 3, title: { display: true, text: 'Days' } }
+                    }
+                }
+            });
+        }
+
+        // Main initialization
+        async function initializeApp() {
+            try {
+                console.log('Loading data from SharePoint...');
+
+                await Promise.all([
+                    loadSites(),
+                    loadSPVs(),
+                    loadRateTiers()
+                ]);
+
+                calculatePortfolio();
+                calculateDashboard();
+                updateDashboard();
+
+                console.log('✅ Data loaded successfully from SharePoint');
+                console.log(`Sites: ${sites.length}, SPVs: ${spvs.length}, Tiers: ${rateTiers.length}`);
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                alert('Error loading data from SharePoint. Please check that the lists exist and you have access.');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
