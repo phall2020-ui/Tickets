@@ -752,6 +752,7 @@
                                 <tr>
                                     <th>Site Name</th>
                                     <th>Size (kWp)</th>
+                                    <th>Type</th>
                                     <th>Contract</th>
                                     <th>Onboard Date</th>
                                     <th>SPV</th>
@@ -759,6 +760,7 @@
                                     <th>CCTV Cost</th>
                                     <th>Cleaning Cost</th>
                                     <th>Monthly Fee</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="sitesBody"></tbody>
@@ -1728,15 +1730,119 @@
                 <tr>
                     <td><a href="#" class="site-link" onclick="openSiteModal(${site.id}); return false;">${site.name}</a></td>
                     <td>${site.systemSizeKwp.toLocaleString()}</td>
+                    <td>${site.siteType || 'Rooftop'}</td>
                     <td><span class="status-badge ${site.contract === 'Yes' ? 'status-yes' : 'status-no'}">${site.contract}</span></td>
                     <td>${site.onboardDate ? new Date(site.onboardDate).toLocaleDateString('en-GB') : '—'}</td>
                     <td>${site.spvCode || '—'}</td>
-                    <td>${formatCurrency(site.pmCost)}</td>
-                    <td>${formatCurrency(site.cctvCost)}</td>
-                    <td>${formatCurrency(site.cleaningCost)}</td>
-                    <td style="font-weight: 600;">${formatCurrency(site.monthlyFee || 0)}</td>
+                    <td>${formatCurrency(site.siteFixedCosts || (site.pmCost + site.cctvCost + site.cleaningCost))}</td>
+                    <td>${formatCurrency(site.fixedFee || 0)}</td>
+                    <td style="font-weight: 600; color: ${site.contract === 'Yes' ? 'var(--green)' : 'var(--text-muted)'}">
+                        ${site.contract === 'Yes' ? formatCurrency(site.monthlyFee || 0) : '—'}
+                    </td>
+                    <td>
+                        <button onclick="editSite('${site.id}')" style="background: var(--blue); color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-right: 4px; font-size: 12px;">Edit</button>
+                        <button onclick="deleteSite('${site.id}')" style="background: var(--red); color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
+                    </td>
                 </tr>
             `).join('');
+        }
+
+        // Edit site function
+        async function editSite(siteId) {
+            const site = sites.find(s => s.id === siteId);
+            if (!site) {
+                alert('Site not found');
+                return;
+            }
+
+            // Create a simple prompt-based editor (for SharePoint version)
+            const newName = prompt('Site Name:', site.name);
+            if (newName === null) return; // Cancelled
+
+            const newSize = parseFloat(prompt('System Size (kWp):', site.systemSizeKwp));
+            if (isNaN(newSize)) {
+                alert('Invalid system size');
+                return;
+            }
+
+            const newType = prompt('Site Type (Rooftop or Ground Mount):', site.siteType || 'Rooftop');
+            const newContract = prompt('Contract Status (Yes or No):', site.contract || 'No');
+            const newSPV = prompt('SPV Code:', site.spvCode || '');
+            const newPM = parseFloat(prompt('PM Cost (£):', site.pmCost || 0));
+            const newCCTV = parseFloat(prompt('CCTV Cost (£):', site.cctvCost || 0));
+            const newCleaning = parseFloat(prompt('Cleaning Cost (£):', site.cleaningCost || 0));
+
+            // Update in SharePoint List
+            try {
+                const digest = await getRequestDigest();
+                const listUrl = `${SP_CONFIG.listsUrl}/getbytitle('Sites')/items(${siteId})`;
+
+                await fetch(listUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json;odata=verbose',
+                        'Content-Type': 'application/json;odata=verbose',
+                        'X-RequestDigest': digest,
+                        'IF-MATCH': '*',
+                        'X-HTTP-Method': 'MERGE'
+                    },
+                    body: JSON.stringify({
+                        __metadata: { type: 'SP.Data.SitesListItem' },
+                        Title: newName,
+                        SystemSizeKwp: newSize,
+                        SiteType: newType,
+                        ContractStatus: newContract,
+                        SPVCode: newSPV,
+                        PMCost: newPM || 0,
+                        CCTVCost: newCCTV || 0,
+                        CleaningCost: newCleaning || 0
+                    })
+                });
+
+                alert('Site updated successfully!');
+
+                // Reload data
+                await initializeApp();
+            } catch (error) {
+                console.error('Error updating site:', error);
+                alert('Failed to update site: ' + error.message);
+            }
+        }
+
+        // Delete site function
+        async function deleteSite(siteId) {
+            const site = sites.find(s => s.id === siteId);
+            if (!site) {
+                alert('Site not found');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete "${site.name}"?`)) {
+                return;
+            }
+
+            try {
+                const digest = await getRequestDigest();
+                const listUrl = `${SP_CONFIG.listsUrl}/getbytitle('Sites')/items(${siteId})`;
+
+                await fetch(listUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json;odata=verbose',
+                        'X-RequestDigest': digest,
+                        'IF-MATCH': '*',
+                        'X-HTTP-Method': 'DELETE'
+                    }
+                });
+
+                alert('Site deleted successfully!');
+
+                // Reload data
+                await initializeApp();
+            } catch (error) {
+                console.error('Error deleting site:', error);
+                alert('Failed to delete site: ' + error.message);
+            }
         }
 
         function renderSPVsTable() {
