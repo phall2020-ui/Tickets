@@ -755,8 +755,9 @@
                                     <th>Contract</th>
                                     <th>Onboard Date</th>
                                     <th>SPV</th>
-                                    <th>Site Costs</th>
-                                    <th>Fixed Fee</th>
+                                    <th>PM Cost</th>
+                                    <th>CCTV Cost</th>
+                                    <th>Cleaning Cost</th>
                                     <th>Monthly Fee</th>
                                 </tr>
                             </thead>
@@ -802,7 +803,27 @@
                     </div>
                 </div>
 
-                <div class="spv-grid" id="spvGrid"></div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">📊 SPV Breakdown</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SPV Code</th>
+                                    <th>SPV Name</th>
+                                    <th>Total Sites</th>
+                                    <th>Contracted</th>
+                                    <th>Capacity (MW)</th>
+                                    <th>Monthly Revenue</th>
+                                    <th>Annual Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spvsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1349,7 +1370,9 @@
             const page = document.getElementById(pageId);
             if (page) page.classList.add('active');
 
-            event.target.closest('.nav-item').classList.add('active');
+            // Find and activate the corresponding nav item
+            const navItem = document.querySelector(`a.nav-item[onclick*="'${pageId}'"]`);
+            if (navItem) navItem.classList.add('active');
         }
 
         function updateDashboard() {
@@ -1453,6 +1476,32 @@
                     <td>${(spv.capacity / 1000).toFixed(2)} MW</td>
                     <td style="font-weight: 600;">${formatCurrency(spv.revenue)}</td>
                     <td style="font-weight: 600;">${formatCurrency(spv.revenue * 12)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterSites() {
+            const search = document.getElementById('siteSearch')?.value.toLowerCase() || '';
+            const tbody = document.getElementById('sitesBody');
+            if (!tbody || !sites) return;
+
+            const filtered = sites.filter(site =>
+                site.name.toLowerCase().includes(search) ||
+                site.spvCode?.toLowerCase().includes(search) ||
+                site.systemSizeKwp.toString().includes(search)
+            );
+
+            tbody.innerHTML = filtered.map(site => `
+                <tr>
+                    <td><a href="#" class="site-link">${site.name}</a></td>
+                    <td>${site.systemSizeKwp.toLocaleString()}</td>
+                    <td><span class="status-badge ${site.contract === 'Yes' ? 'status-yes' : 'status-no'}">${site.contract}</span></td>
+                    <td>${site.onboardDate ? new Date(site.onboardDate).toLocaleDateString('en-GB') : '—'}</td>
+                    <td>${site.spvCode || '—'}</td>
+                    <td>${formatCurrency(site.pmCost)}</td>
+                    <td>${formatCurrency(site.cctvCost)}</td>
+                    <td>${formatCurrency(site.cleaningCost)}</td>
+                    <td style="font-weight: 600;">${formatCurrency(site.monthlyFee || 0)}</td>
                 </tr>
             `).join('');
         }
