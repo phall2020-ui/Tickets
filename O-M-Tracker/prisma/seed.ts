@@ -24,6 +24,22 @@ const defaultRateTiers = [
   { tierName: '30-40MW', minCapacityMW: 30, maxCapacityMW: 40, ratePerKwp: 1.7 },
 ];
 
+// Sample Clearsol sites
+const sampleSites = [
+  { name: 'Meadow Solar Farm', systemSizeKwp: 2450, siteType: SiteType.GROUND_MOUNT, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-01-15'), pmCost: 500, cctvCost: 200, cleaningCost: 300, spvCode: 'OS2' },
+  { name: 'Hilltop Energy Park', systemSizeKwp: 1850, siteType: SiteType.ROOFTOP, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-02-20'), pmCost: 450, cctvCost: 150, cleaningCost: 250, spvCode: 'AD1' },
+  { name: 'Valley View Solar', systemSizeKwp: 3200, siteType: SiteType.GROUND_MOUNT, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-03-10'), pmCost: 600, cctvCost: 250, cleaningCost: 400, spvCode: 'OS2' },
+  { name: 'Sunrise Industrial', systemSizeKwp: 980, siteType: SiteType.ROOFTOP, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-04-05'), pmCost: 300, cctvCost: 100, cleaningCost: 150, spvCode: 'ESI8' },
+  { name: 'Northfield Array', systemSizeKwp: 1560, siteType: SiteType.GROUND_MOUNT, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-05-18'), pmCost: 400, cctvCost: 150, cleaningCost: 200, spvCode: 'FS' },
+  { name: 'Greenacre Station', systemSizeKwp: 2100, siteType: SiteType.GROUND_MOUNT, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-06-22'), pmCost: 480, cctvCost: 180, cleaningCost: 280, spvCode: 'ESI1' },
+  { name: 'Riverside Solar', systemSizeKwp: 890, siteType: SiteType.ROOFTOP, contractStatus: ContractStatus.NO, pmCost: 280, cctvCost: 80, cleaningCost: 120, spvCode: 'UV1' },
+  { name: 'Lakeside Power', systemSizeKwp: 1720, siteType: SiteType.GROUND_MOUNT, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-08-14'), pmCost: 420, cctvCost: 160, cleaningCost: 220, spvCode: 'SKY' },
+  { name: 'Oakwood Farm', systemSizeKwp: 2680, siteType: SiteType.GROUND_MOUNT, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-09-01'), pmCost: 550, cctvCost: 220, cleaningCost: 350, spvCode: 'OS2' },
+  { name: 'Pinewood Solar', systemSizeKwp: 1340, siteType: SiteType.ROOFTOP, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-10-12'), pmCost: 380, cctvCost: 140, cleaningCost: 180, spvCode: 'AD1' },
+  { name: 'Cedar Heights', systemSizeKwp: 1980, siteType: SiteType.GROUND_MOUNT, contractStatus: ContractStatus.NO, pmCost: 460, cctvCost: 170, cleaningCost: 260, spvCode: 'ESI10' },
+  { name: 'Willow Creek', systemSizeKwp: 760, siteType: SiteType.ROOFTOP, contractStatus: ContractStatus.YES, onboardDate: new Date('2023-11-28'), pmCost: 250, cctvCost: 70, cleaningCost: 100, spvCode: 'FS' },
+];
+
 async function main() {
   console.log('🌱 Starting database seed...');
 
@@ -62,56 +78,41 @@ async function main() {
   }
   console.log(`✅ Created ${defaultRateTiers.length} rate tiers`);
 
-  // Import existing sites from JSON if available
-  const sitesJsonPath = path.join(process.cwd(), 'src/data/sites.json');
-  if (fs.existsSync(sitesJsonPath)) {
-    const sitesData = JSON.parse(fs.readFileSync(sitesJsonPath, 'utf-8'));
-    
-    if (sitesData.length > 0) {
-      console.log(`📥 Found ${sitesData.length} sites in JSON, migrating...`);
-      
-      for (const site of sitesData) {
-        // Find SPV by code
-        let spvId: string | null = null;
-        if (site.spvCode) {
-          const spv = await prisma.sPV.findUnique({ where: { code: site.spvCode } });
-          spvId = spv?.id || null;
-        }
+  // Create sample sites
+  console.log('📥 Creating sample Clearsol sites...');
+  let sitesCreated = 0;
 
-        await prisma.site.upsert({
-          where: { id: site.id },
-          update: {
-            name: site.name,
-            systemSizeKwp: site.systemSizeKwp,
-            siteType: site.siteType === 'Ground Mount' ? SiteType.GROUND_MOUNT : SiteType.ROOFTOP,
-            contractStatus: site.contractStatus === 'Yes' ? ContractStatus.YES : ContractStatus.NO,
-            onboardDate: site.onboardDate ? new Date(site.onboardDate) : null,
-            pmCost: site.pmCost || 0,
-            cctvCost: site.cctvCost || 0,
-            cleaningCost: site.cleaningCost || 0,
-            spvId,
-            sourceSheet: site.sourceSheet,
-            sourceRow: site.sourceRow,
-          },
-          create: {
-            id: site.id,
-            name: site.name,
-            systemSizeKwp: site.systemSizeKwp,
-            siteType: site.siteType === 'Ground Mount' ? SiteType.GROUND_MOUNT : SiteType.ROOFTOP,
-            contractStatus: site.contractStatus === 'Yes' ? ContractStatus.YES : ContractStatus.NO,
-            onboardDate: site.onboardDate ? new Date(site.onboardDate) : null,
-            pmCost: site.pmCost || 0,
-            cctvCost: site.cctvCost || 0,
-            cleaningCost: site.cleaningCost || 0,
-            spvId,
-            sourceSheet: site.sourceSheet,
-            sourceRow: site.sourceRow,
-          },
-        });
-      }
-      console.log(`✅ Migrated ${sitesData.length} sites from JSON`);
+  for (const site of sampleSites) {
+    // Find SPV by code
+    let spvId: string | null = null;
+    if (site.spvCode) {
+      const spv = await prisma.sPV.findUnique({ where: { code: site.spvCode } });
+      spvId = spv?.id || null;
+    }
+
+    // Check if site already exists
+    const existing = await prisma.site.findFirst({
+      where: { name: site.name },
+    });
+
+    if (!existing) {
+      await prisma.site.create({
+        data: {
+          name: site.name,
+          systemSizeKwp: site.systemSizeKwp,
+          siteType: site.siteType,
+          contractStatus: site.contractStatus,
+          onboardDate: site.onboardDate || null,
+          pmCost: site.pmCost || 0,
+          cctvCost: site.cctvCost || 0,
+          cleaningCost: site.cleaningCost || 0,
+          spvId,
+        },
+      });
+      sitesCreated++;
     }
   }
+  console.log(`✅ Created ${sitesCreated} sample sites`);
 
   console.log('🎉 Database seed completed!');
 }
