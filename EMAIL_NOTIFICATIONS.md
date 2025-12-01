@@ -1,5 +1,7 @@
 # Email Notifications Feature
 
+**Last Updated:** 2025-11-13
+
 This document describes the email notification feature that allows users to receive email alerts for various ticket activities.
 
 ## Overview

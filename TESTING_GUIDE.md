@@ -1,5 +1,7 @@
 # Comprehensive End-to-End Testing Guide
 
+**Last Updated:** 2025-11-13
+
 ## Overview
 
 This repository now includes comprehensive end-to-end testing for both the backend API and frontend dashboard, covering all major functions and user workflows.

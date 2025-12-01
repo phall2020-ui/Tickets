@@ -1,5 +1,7 @@
 # Database Seeding Instructions
 
+**Last Updated:** 2025-11-13
+
 ## Prerequisites
 
 You need a PostgreSQL database running. You can either:

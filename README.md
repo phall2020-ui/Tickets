@@ -2,6 +2,9 @@
 
 Enterprise-grade multi-tenant ticketing system for asset management platforms.
 
+**Version:** 1.0.0  
+**Last Updated:** 2025-11-13
+
 ## Overview
 
 This repository contains a complete ticketing solution with a RESTful API backend service and a modern React-based dashboard. The system is designed for multi-tenant environments and provides comprehensive ticket management capabilities including custom fields, attachments, comments, user assignments, and advanced search functionality.
@@ -19,13 +22,15 @@ The system consists of three main components:
 ### Core Functionality
 - 🏢 **Multi-tenancy**: Isolated data and operations per tenant
 - 🎫 **Ticket Management**: Full CRUD operations with status tracking and priority levels
-- 👥 **User Assignment**: Assign tickets to team members
-- 💬 **Comments**: Public and internal comments with edit/delete capabilities
+- 👥 **User Assignment**: Assign tickets to team members with role-based access (ADMIN/USER)
+- 💬 **Comments**: Public and internal comments with edit/delete capabilities and @mentions
 - 📎 **Attachments**: S3-backed file storage with upload, download, and delete operations
 - 🔍 **Advanced Search**: OpenSearch-powered full-text search with date range filtering
 - 🏗️ **Custom Fields**: Flexible field definitions per tenant with filtering support
 - 🏢 **Site Management**: Organize tickets by locations/sites
-- 🔐 **Authentication**: JWT-based authentication with Passport
+- 🔐 **Authentication**: JWT-based authentication with email/password support
+- 📧 **Email Notifications**: Automated email notifications for ticket updates and mentions
+- 🔄 **Recurring Tickets**: Support for recurring ticket creation with customizable schedules
 - 📊 **Health Checks**: Built-in health monitoring endpoints
 - 🚦 **Rate Limiting**: Protection against abuse
 - 📈 **Observability**: OpenTelemetry instrumentation
@@ -34,6 +39,7 @@ The system consists of three main components:
 - 👤 **User Management**: Create, update, delete users and reset passwords (admin only)
 - 🏷️ **Issue Type Management**: Create, edit, and deactivate issue types (admin only)
 - ⚙️ **Field Definition Management**: Create, update, and delete custom field definitions (admin only)
+- 🔄 **Recurring Ticket Management**: Configure and manage recurring ticket schedules (admin only)
 
 ### Filtering & Search
 - Filter tickets by status, priority, type, site, assigned user
@@ -55,9 +61,13 @@ The system consists of three main components:
 ### Frontend
 - **Framework**: React 18
 - **Build Tool**: Vite 5
+- **UI Library**: Material-UI (MUI) v5
+- **State Management**: React Query (TanStack Query)
 - **Routing**: React Router 6
 - **HTTP Client**: Axios
+- **Styling**: Emotion (CSS-in-JS)
 - **Language**: TypeScript 5.x
+- **Features**: Dark/light theme support, responsive design, accessibility (WCAG 2.2 AA)
 
 ## Prerequisites
 
